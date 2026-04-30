@@ -23,8 +23,8 @@ const srOnly: React.CSSProperties = {
 
 // Static fallback nodes — used while DB loads or if DB is empty
 const FALLBACK_NODES: NavNode[] = [
-  { id: "github",  label: "Github",  url: "https://github.com" },
-  { id: "podcast", label: "Podcast", url: "https://unscaled.me/podcast" },
+  { id: "github",  label: "Github",  url: "https://github.com/massif-01" },
+  { id: "podcast", label: "Podcast", url: "https://unscaled.podcast.xyz" },
   { id: "ai",      label: "AI",      url: "https://unscaled.me/ai" },
   { id: "info",    label: "Info",    url: "https://unscaled.me/info" },
 ];
