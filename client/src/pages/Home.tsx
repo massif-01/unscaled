@@ -79,9 +79,9 @@ export default function Home() {
   // Mobile: wordmark 42vw | desktop: wordmark 46%
   const wordmarkWidth = isMobile ? "42vw" : "46%";
   const wordmarkPadLeft = isMobile
-    ? "clamp(1.2rem, 5vw, 2rem)"
-    : "clamp(2.2rem, 5.5vw, 5.5rem)";
-  const wordmarkPadRight = isMobile ? "0.8rem" : "2rem";
+    ? "clamp(1.8rem, 6.5vw, 2.8rem)"
+    : "clamp(3.2rem, 7vw, 6.5rem)";
+  const wordmarkPadRight = isMobile ? "0.6rem" : "1.2rem";
   const h1FontSize = isMobile
     ? "clamp(2.2rem, 9vw, 3.4rem)"
     : "clamp(3.8rem, 6.5vw, 8rem)";
@@ -248,7 +248,7 @@ export default function Home() {
         style={{
           position: "absolute",
           bottom: isMobile ? "0.6rem" : "clamp(1.2rem, 2.5vw, 2rem)",
-          left: isMobile ? "clamp(1.2rem, 5vw, 2rem)" : "clamp(2.2rem, 5.5vw, 5.5rem)",
+          left: isMobile ? "clamp(1.8rem, 6.5vw, 2.8rem)" : "clamp(3.2rem, 7vw, 6.5rem)",
           fontFamily: "'Space Mono', monospace",
           fontSize: "7px",
           letterSpacing: "0.18em",
