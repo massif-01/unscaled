@@ -13,6 +13,19 @@
 import { useEffect, useState } from "react";
 import SignalField, { NavNode } from "@/components/SignalField";
 
+// SEO: visually hidden utility
+const srOnly: React.CSSProperties = {
+  position: "absolute",
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0,0,0,0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // NAV_NODES — Edit this array to add/remove navigation destinations.
 // Each node requires: id (unique), label (display text), url (destination).
@@ -47,6 +60,8 @@ export default function Home() {
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 100);
+    // SEO: set document.title explicitly as required
+    document.title = "Unscaled — Beyond the Scale, Observer's Freedom";
     return () => clearTimeout(t);
   }, []);
 
@@ -62,6 +77,11 @@ export default function Home() {
         userSelect: "none",
       }}
     >
+      {/* SEO: visually hidden H2 for crawlers */}
+      <h2 style={srOnly}>
+        Unscaled — Personal space for podcast, AI experiments, GitHub projects, and essays beyond hardware metrics.
+      </h2>
+
       {/* ── Left: Wordmark Column ───────────────────────────────────────── */}
       <div
         style={{
