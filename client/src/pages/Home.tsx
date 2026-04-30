@@ -1,16 +1,11 @@
 /*
  * Home — Unscaled "Signal in the Void"
- *
- * Design System:
- * - Background: warm paper white oklch(0.98 0.008 85)
- * - Wordmark: Cormorant Garamond 700, ~9vw, ink black
- * - Tagline: Cormorant Garamond 300 italic, muted
- * - Signal field: right 62%, Canvas-rendered, indigo nodes
- * - Typography meta: Space Mono 400, 9-11px, uppercase
- * - No scroll. Full viewport. Stillness is the default state.
+ * Nav nodes are loaded dynamically from the database via tRPC.
+ * Falls back to static defaults if the API returns empty (e.g. first load).
  */
 
 import { useEffect, useState } from "react";
+import { trpc } from "@/lib/trpc";
 import SignalField, { NavNode } from "@/components/SignalField";
 
 // SEO: visually hidden utility
@@ -26,44 +21,39 @@ const srOnly: React.CSSProperties = {
   border: 0,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// NAV_NODES — Edit this array to add/remove navigation destinations.
-// Each node requires: id (unique), label (display text), url (destination).
-// Optional: nx/ny (0–1 normalized canvas position) to override auto-placement.
-// ─────────────────────────────────────────────────────────────────────────────
-const NAV_NODES: NavNode[] = [
-  {
-    id: "github",
-    label: "Github",
-    url: "https://github.com",
-  },
-  {
-    id: "podcast",
-    label: "Podcast",
-    url: "https://unscaled.me/podcast",
-  },
-  {
-    id: "ai",
-    label: "AI",
-    url: "https://unscaled.me/ai",
-  },
-  {
-    id: "info",
-    label: "Info",
-    url: "https://unscaled.me/info",
-  },
+// Static fallback nodes — used while DB loads or if DB is empty
+const FALLBACK_NODES: NavNode[] = [
+  { id: "github",  label: "Github",  url: "https://github.com" },
+  { id: "podcast", label: "Podcast", url: "https://unscaled.me/podcast" },
+  { id: "ai",      label: "AI",      url: "https://unscaled.me/ai" },
+  { id: "info",    label: "Info",    url: "https://unscaled.me/info" },
 ];
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 100);
-    // SEO: set document.title explicitly as required
     document.title = "Unscaled — Beyond the Scale, Observer's Freedom";
     return () => clearTimeout(t);
   }, []);
+
+  // Load nav nodes from DB
+  const { data: dbNodes } = trpc.nodes.list.useQuery(undefined, {
+    staleTime: 30_000,
+  });
+
+  // Map DB rows to SignalField NavNode shape
+  const navNodes: NavNode[] =
+    dbNodes && dbNodes.length > 0
+      ? dbNodes.map((n) => ({
+          id: String(n.id),
+          label: n.label,
+          url: n.url,
+          nx: n.posX ? parseFloat(n.posX) : undefined,
+          ny: n.posY ? parseFloat(n.posY) : undefined,
+        }))
+      : FALLBACK_NODES;
 
   return (
     <div
@@ -77,12 +67,13 @@ export default function Home() {
         userSelect: "none",
       }}
     >
-      {/* SEO: visually hidden H2 for crawlers */}
+      {/* SEO: visually hidden H2 */}
       <h2 style={srOnly}>
-        Unscaled — Personal space for podcast, AI experiments, GitHub projects, and essays beyond hardware metrics.
+        Unscaled — Personal space for podcast, AI experiments, GitHub projects,
+        and essays beyond hardware metrics.
       </h2>
 
-      {/* ── Left: Wordmark Column ───────────────────────────────────────── */}
+      {/* ── Left: Wordmark ─────────────────────────────────────────────── */}
       <div
         style={{
           width: "38%",
@@ -99,7 +90,6 @@ export default function Home() {
           flexShrink: 0,
         }}
       >
-        {/* Wordmark — the inscription */}
         <div
           style={{
             opacity: mounted ? 1 : 0,
@@ -125,7 +115,6 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* Tagline */}
         <div
           style={{
             opacity: mounted ? 1 : 0,
@@ -154,7 +143,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Hairline rule */}
+        {/* Hairline */}
         <div
           style={{
             width: mounted ? "clamp(2rem, 3.5vw, 3rem)" : "0px",
@@ -165,7 +154,6 @@ export default function Home() {
           }}
         />
 
-        {/* Domain */}
         <div
           style={{
             opacity: mounted ? 0.55 : 0,
@@ -213,7 +201,7 @@ export default function Home() {
           transition: "opacity 1.8s ease 0.25s",
         }}
       >
-        <SignalField nodes={NAV_NODES} />
+        <SignalField nodes={navNodes} />
         <HoverHint />
       </div>
 
@@ -238,15 +226,12 @@ export default function Home() {
   );
 }
 
-// ── Hover hint — fades after 5s ───────────────────────────────────────────────
 function HoverHint() {
   const [vis, setVis] = useState(true);
-
   useEffect(() => {
     const t = setTimeout(() => setVis(false), 5500);
     return () => clearTimeout(t);
   }, []);
-
   return (
     <div
       style={{
