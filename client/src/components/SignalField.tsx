@@ -38,6 +38,14 @@ interface Particle {
   entranceT: number;
   entranceDelay: number;
   entranceDone: boolean;
+  // Drift breathing — slow sinusoidal position offset
+  drifting: boolean;
+  driftPhaseX: number;
+  driftPhaseY: number;
+  driftSpeedX: number;
+  driftSpeedY: number;
+  driftAmpX: number;
+  driftAmpY: number;
 }
 
 export interface SignalFieldProps {
@@ -120,22 +128,31 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           entranceT: 0,
           entranceDelay: i * 6,
           entranceDone: false,
+          drifting: false,
+          driftPhaseX: 0,
+          driftPhaseY: 0,
+          driftSpeedX: 0,
+          driftSpeedY: 0,
+          driftAmpX: 0,
+          driftAmpY: 0,
         });
       });
 
       // Background particles — distributed across full canvas
+      // ~25% of them are "drifters" that breathe with slow sinusoidal position offset
       for (let i = 0; i < BG_COUNT; i++) {
         const tx = rand(0.02 * w, 0.98 * w);
         const ty = rand(0.03 * h, 0.97 * h);
         const sa = rand(0, Math.PI * 2);
         const sd = rand(30, 140);
+        const drifting = Math.random() < 0.25;
         list.push({
           x: tx + Math.cos(sa) * sd,
           y: ty + Math.sin(sa) * sd,
           tx,
           ty,
-          vx: rand(-0.055, 0.055),
-          vy: rand(-0.038, 0.038),
+          vx: 0,
+          vy: 0,
           radius: rand(BG_R_MIN, BG_R_MAX),
           opacity: rand(0.10, 0.45),
           isNamed: false,
@@ -148,6 +165,16 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           entranceT: 0,
           entranceDelay: Math.floor(rand(0, 25)),
           entranceDone: false,
+          drifting,
+          // Each drifter has independent phase & amplitude for organic feel
+          driftPhaseX: rand(0, Math.PI * 2),
+          driftPhaseY: rand(0, Math.PI * 2),
+          // Very slow: full cycle takes ~12–22 seconds at 60fps
+          driftSpeedX: rand(0.0012, 0.0028),
+          driftSpeedY: rand(0.0010, 0.0024),
+          // Subtle displacement: 2–6px
+          driftAmpX: drifting ? rand(2, 6) : 0,
+          driftAmpY: drifting ? rand(2, 5) : 0,
         });
       }
 
@@ -220,10 +247,15 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             }
           }
         } else if (!p.isNamed) {
-          p.x += p.vx;
-          p.y += p.vy;
-          if (p.x < 0 || p.x > w) p.vx *= -1;
-          if (p.y < 0 || p.y > h) p.vy *= -1;
+          if (p.drifting) {
+            // Advance drift phases
+            p.driftPhaseX += p.driftSpeedX;
+            p.driftPhaseY += p.driftSpeedY;
+            // Position = anchor (tx/ty) + sinusoidal offset
+            p.x = p.tx + Math.sin(p.driftPhaseX) * p.driftAmpX;
+            p.y = p.ty + Math.sin(p.driftPhaseY) * p.driftAmpY;
+          }
+          // Non-drifters stay perfectly still at tx/ty
         }
 
         p.breathPhase += p.breathSpeed;
