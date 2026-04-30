@@ -1,11 +1,12 @@
 /*
  * SignalField — Unscaled "Signal in the Void"
  *
- * Design: Canvas particle field with proximity triangulation lines.
- * Named nodes pulse with electric indigo, have permanent micro-labels,
- * and expand on hover with sonar ripple + full label reveal.
- *
- * To add nodes: edit NAV_NODES in Home.tsx only.
+ * Features:
+ * - Canvas particle field with proximity triangulation lines
+ * - Named nodes: pulse, permanent micro-labels, hover ripple
+ * - Drag named nodes (mouse + touch): surrounding particles are repelled
+ *   with spring-back physics when released
+ * - ~25% background particles drift with slow sinusoidal breathing
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,8 +22,15 @@ export interface NavNode {
 interface Particle {
   x: number;
   y: number;
+  // Anchor (home) position — particles spring back here
   tx: number;
   ty: number;
+  // Displacement from anchor caused by repulsion
+  dispX: number;
+  dispY: number;
+  // Velocity for spring physics
+  velX: number;
+  velY: number;
   vx: number;
   vy: number;
   radius: number;
@@ -38,7 +46,7 @@ interface Particle {
   entranceT: number;
   entranceDelay: number;
   entranceDone: boolean;
-  // Drift breathing — slow sinusoidal position offset
+  // Drift breathing
   drifting: boolean;
   driftPhaseX: number;
   driftPhaseY: number;
@@ -58,6 +66,12 @@ const NAMED_R = 5.0;
 const BG_R_MIN = 0.9;
 const BG_R_MAX = 2.4;
 
+// Repulsion physics constants
+const REPEL_RADIUS = 120;   // px — how far the drag repels particles
+const REPEL_STRENGTH = 0.9; // force multiplier
+const SPRING_K = 0.055;     // spring stiffness for return
+const DAMPING = 0.78;       // velocity damping (0–1)
+
 function rand(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
@@ -66,17 +80,15 @@ function easeOutExpo(t: number) {
   return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
 }
 
-// Predefined positions for up to 8 named nodes (normalized 0-1 in canvas)
-// These create a natural organic cluster in the right-center area
 const NAMED_POSITIONS = [
-  { nx: 0.42, ny: 0.38 }, // Github — upper left of cluster
-  { nx: 0.68, ny: 0.28 }, // Podcast — upper right
-  { nx: 0.55, ny: 0.62 }, // AI — lower center
-  { nx: 0.78, ny: 0.58 }, // Info — right
-  { nx: 0.35, ny: 0.70 }, // slot 5
-  { nx: 0.82, ny: 0.38 }, // slot 6
-  { nx: 0.60, ny: 0.80 }, // slot 7
-  { nx: 0.72, ny: 0.72 }, // slot 8
+  { nx: 0.42, ny: 0.38 },
+  { nx: 0.68, ny: 0.28 },
+  { nx: 0.55, ny: 0.62 },
+  { nx: 0.78, ny: 0.58 },
+  { nx: 0.35, ny: 0.70 },
+  { nx: 0.82, ny: 0.38 },
+  { nx: 0.60, ny: 0.80 },
+  { nx: 0.72, ny: 0.72 },
 ];
 
 export default function SignalField({ nodes }: SignalFieldProps) {
@@ -84,6 +96,8 @@ export default function SignalField({ nodes }: SignalFieldProps) {
   const particlesRef = useRef<Particle[]>([]);
   const animRef = useRef<number>(0);
   const hoveredRef = useRef<Particle | null>(null);
+  const draggedRef = useRef<Particle | null>(null);
+  const dragOffsetRef = useRef({ dx: 0, dy: 0 });
   const sizeRef = useRef({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
@@ -99,7 +113,6 @@ export default function SignalField({ nodes }: SignalFieldProps) {
     (w: number, h: number) => {
       const list: Particle[] = [];
 
-      // Named nodes
       nodes.forEach((node, i) => {
         const pos = NAMED_POSITIONS[i % NAMED_POSITIONS.length];
         const nx = node.nx ?? pos.nx;
@@ -111,10 +124,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         list.push({
           x: tx + Math.cos(sa) * sd,
           y: ty + Math.sin(sa) * sd,
-          tx,
-          ty,
-          vx: 0,
-          vy: 0,
+          tx, ty,
+          dispX: 0, dispY: 0,
+          velX: 0, velY: 0,
+          vx: 0, vy: 0,
           radius: NAMED_R,
           opacity: 1,
           isNamed: true,
@@ -129,17 +142,12 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           entranceDelay: i * 6,
           entranceDone: false,
           drifting: false,
-          driftPhaseX: 0,
-          driftPhaseY: 0,
-          driftSpeedX: 0,
-          driftSpeedY: 0,
-          driftAmpX: 0,
-          driftAmpY: 0,
+          driftPhaseX: 0, driftPhaseY: 0,
+          driftSpeedX: 0, driftSpeedY: 0,
+          driftAmpX: 0, driftAmpY: 0,
         });
       });
 
-      // Background particles — distributed across full canvas
-      // ~25% of them are "drifters" that breathe with slow sinusoidal position offset
       for (let i = 0; i < BG_COUNT; i++) {
         const tx = rand(0.02 * w, 0.98 * w);
         const ty = rand(0.03 * h, 0.97 * h);
@@ -149,10 +157,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         list.push({
           x: tx + Math.cos(sa) * sd,
           y: ty + Math.sin(sa) * sd,
-          tx,
-          ty,
-          vx: 0,
-          vy: 0,
+          tx, ty,
+          dispX: 0, dispY: 0,
+          velX: 0, velY: 0,
+          vx: 0, vy: 0,
           radius: rand(BG_R_MIN, BG_R_MAX),
           opacity: rand(0.10, 0.45),
           isNamed: false,
@@ -166,13 +174,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           entranceDelay: Math.floor(rand(0, 25)),
           entranceDone: false,
           drifting,
-          // Each drifter has independent phase & amplitude for organic feel
           driftPhaseX: rand(0, Math.PI * 2),
           driftPhaseY: rand(0, Math.PI * 2),
-          // Very slow: full cycle takes ~12–22 seconds at 60fps
           driftSpeedX: rand(0.0012, 0.0028),
           driftSpeedY: rand(0.0010, 0.0024),
-          // Subtle displacement: 2–6px
           driftAmpX: drifting ? rand(2, 6) : 0,
           driftAmpY: drifting ? rand(2, 5) : 0,
         });
@@ -231,13 +236,13 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       ctx.clearRect(0, 0, w, h);
 
       const ps = particlesRef.current;
+      const dragged = draggedRef.current;
 
-      // Update
+      // ── Update ──────────────────────────────────────────────────────────
       for (const p of ps) {
         if (!p.entranceDone) {
           if (frame > p.entranceDelay) {
             p.entranceT = Math.min(1, p.entranceT + 0.055);
-            const t = easeOutExpo(p.entranceT);
             p.x = p.x + (p.tx - p.x) * 0.07;
             p.y = p.y + (p.ty - p.y) * 0.07;
             if (p.entranceT >= 1) {
@@ -246,16 +251,51 @@ export default function SignalField({ nodes }: SignalFieldProps) {
               p.entranceDone = true;
             }
           }
+        } else if (p === dragged) {
+          // Dragged named node — position set externally by pointer events
+          // Apply repulsion to all other particles
+          for (const q of ps) {
+            if (q === p || !q.entranceDone) continue;
+            const dx = q.tx + q.dispX - p.x;
+            const dy = q.ty + q.dispY - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < REPEL_RADIUS && dist > 0) {
+              const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
+              // Push q away from dragged node
+              q.velX -= (dx / dist) * force;
+              q.velY -= (dy / dist) * force;
+            }
+          }
         } else if (!p.isNamed) {
+          // Spring back toward anchor + drift
+          // Spring force: F = -k * disp
+          p.velX += -SPRING_K * p.dispX;
+          p.velY += -SPRING_K * p.dispY;
+          p.velX *= DAMPING;
+          p.velY *= DAMPING;
+          p.dispX += p.velX;
+          p.dispY += p.velY;
+
+          // Drift breathing on top of displacement
           if (p.drifting) {
-            // Advance drift phases
             p.driftPhaseX += p.driftSpeedX;
             p.driftPhaseY += p.driftSpeedY;
-            // Position = anchor (tx/ty) + sinusoidal offset
-            p.x = p.tx + Math.sin(p.driftPhaseX) * p.driftAmpX;
-            p.y = p.ty + Math.sin(p.driftPhaseY) * p.driftAmpY;
+            p.x = p.tx + p.dispX + Math.sin(p.driftPhaseX) * p.driftAmpX;
+            p.y = p.ty + p.dispY + Math.sin(p.driftPhaseY) * p.driftAmpY;
+          } else {
+            p.x = p.tx + p.dispX;
+            p.y = p.ty + p.dispY;
           }
-          // Non-drifters stay perfectly still at tx/ty
+        } else if (p.isNamed && p !== dragged) {
+          // Non-dragged named nodes: spring back if displaced
+          p.velX += -SPRING_K * p.dispX;
+          p.velY += -SPRING_K * p.dispY;
+          p.velX *= DAMPING;
+          p.velY *= DAMPING;
+          p.dispX += p.velX;
+          p.dispY += p.velY;
+          p.x = p.tx + p.dispX;
+          p.y = p.ty + p.dispY;
         }
 
         p.breathPhase += p.breathSpeed;
@@ -277,7 +317,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         return easeOutExpo(Math.max(0, p.entranceT - 0.15) / 0.85);
       };
 
-      // Draw lines
+      // ── Draw lines ──────────────────────────────────────────────────────
       for (let i = 0; i < ps.length; i++) {
         const a = ps[i];
         if (entryOp(a) < 0.1) continue;
@@ -290,16 +330,19 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           if (dist >= MAX_DIST) continue;
 
           const distAlpha = (1 - dist / MAX_DIST) * 0.30;
-          const eoA = entryOp(a);
-          const eoB = entryOp(b);
-          const eo = Math.min(eoA, eoB);
+          const eo = Math.min(entryOp(a), entryOp(b));
 
           const isHovLine =
             (a === hoveredRef.current || b === hoveredRef.current) &&
             (a.isNamed || b.isNamed);
+          const isDragLine =
+            (a === dragged || b === dragged);
           const isNamedLine = a.isNamed || b.isNamed;
 
-          if (isHovLine) {
+          if (isDragLine) {
+            ctx.strokeStyle = `rgba(64,64,192,${Math.min(distAlpha * 4.5, 0.85) * eo})`;
+            ctx.lineWidth = 1.1;
+          } else if (isHovLine) {
             ctx.strokeStyle = `rgba(64,64,192,${Math.min(distAlpha * 3.5, 0.7) * eo})`;
             ctx.lineWidth = 0.9;
           } else if (isNamedLine) {
@@ -317,7 +360,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         }
       }
 
-      // Draw particles
+      // ── Draw particles ──────────────────────────────────────────────────
       for (const p of ps) {
         const eo = entryOp(p);
         if (eo < 0.02) continue;
@@ -327,13 +370,14 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
         if (p.isNamed) {
           const isHov = p === hoveredRef.current;
-          const base = isHov ? 1 : 0.85;
+          const isDrag = p === dragged;
+          const base = (isHov || isDrag) ? 1 : 0.85;
           const fo = base * eo;
 
-          // Outer glow
-          const glowR = r * (isHov ? 5.5 : 4.0);
+          // Outer glow — larger when dragging
+          const glowR = r * (isDrag ? 7.0 : isHov ? 5.5 : 4.0);
           const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-          grd.addColorStop(0, `rgba(64,64,192,${fo * 0.28})`);
+          grd.addColorStop(0, `rgba(64,64,192,${fo * (isDrag ? 0.38 : 0.28)})`);
           grd.addColorStop(0.45, `rgba(64,64,192,${fo * 0.07})`);
           grd.addColorStop(1, `rgba(64,64,192,0)`);
           ctx.beginPath();
@@ -343,7 +387,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
           // Core
           ctx.beginPath();
-          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, r * (isDrag ? 1.35 : 1), 0, Math.PI * 2);
           ctx.fillStyle = `rgba(64,64,192,${fo})`;
           ctx.fill();
 
@@ -362,12 +406,19 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             ctx.stroke();
           }
 
-          // Permanent micro-label (always visible, very small)
-          if (eo > 0.6 && !isHov) {
+          // Micro-label
+          if (eo > 0.6 && !isHov && !isDrag) {
             ctx.font = `400 9px 'Space Mono', monospace`;
             ctx.fillStyle = `rgba(64,64,192,${fo * 0.55})`;
             ctx.textAlign = "center";
             ctx.fillText(p.node!.label.toUpperCase(), p.x, p.y - r * 2.2 - 4);
+          }
+          // Larger label while dragging
+          if (isDrag) {
+            ctx.font = `700 11px 'Space Mono', monospace`;
+            ctx.fillStyle = `rgba(64,64,192,${fo * 0.9})`;
+            ctx.textAlign = "center";
+            ctx.fillText(p.node!.label.toUpperCase(), p.x, p.y - r * 2.8 - 6);
           }
         } else {
           const opBase = p.opacity * (1 + Math.sin(p.breathPhase) * p.breathAmp * 0.5);
@@ -385,26 +436,59 @@ export default function SignalField({ nodes }: SignalFieldProps) {
     return () => cancelAnimationFrame(animRef.current);
   }, []);
 
-  // Mouse
+  // ── Pointer helpers ────────────────────────────────────────────────────────
+  const getCanvasPos = useCallback(
+    (clientX: number, clientY: number) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    },
+    []
+  );
+
+  const findNamedAt = useCallback((cx: number, cy: number) => {
+    for (const p of particlesRef.current) {
+      if (!p.isNamed) continue;
+      const dx = p.x - cx;
+      const dy = p.y - cy;
+      if (Math.sqrt(dx * dx + dy * dy) < NAMED_R * 6) return p;
+    }
+    return null;
+  }, []);
+
+  // ── Mouse events ───────────────────────────────────────────────────────────
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const { x, y } = getCanvasPos(e.clientX, e.clientY);
+      const found = findNamedAt(x, y);
+      if (found) {
+        draggedRef.current = found;
+        dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
+        hoveredRef.current = found;
+        setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
+        (e.target as HTMLCanvasElement).style.cursor = "grabbing";
+        e.preventDefault();
+      }
+    },
+    [getCanvasPos, findNamedAt]
+  );
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
+      const { x, y } = getCanvasPos(e.clientX, e.clientY);
 
-      let found: Particle | null = null;
-      for (const p of particlesRef.current) {
-        if (!p.isNamed) continue;
-        const dx = p.x - mx;
-        const dy = p.y - my;
-        if (Math.sqrt(dx * dx + dy * dy) < NAMED_R * 5) {
-          found = p;
-          break;
-        }
+      if (draggedRef.current) {
+        const p = draggedRef.current;
+        p.x = x + dragOffsetRef.current.dx;
+        p.y = y + dragOffsetRef.current.dy;
+        setTooltip({ x: p.x, y: p.y, label: p.node!.label, visible: true });
+        return;
       }
 
+      const found = findNamedAt(x, y);
       if (found !== hoveredRef.current) {
         hoveredRef.current = found;
         if (found) {
@@ -412,36 +496,99 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           found.rippleOpacity = 0.6;
           found.rippleActive = true;
           setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
-          canvas.style.cursor = "pointer";
+          canvas.style.cursor = "grab";
         } else {
           setTooltip((t) => ({ ...t, visible: false }));
           canvas.style.cursor = "crosshair";
         }
       }
     },
-    []
+    [getCanvasPos, findNamedAt]
+  );
+
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const { x, y } = getCanvasPos(e.clientX, e.clientY);
+      const wasDragged = draggedRef.current;
+
+      if (wasDragged) {
+        // Check if it was a click (minimal movement)
+        const dx = wasDragged.x - (wasDragged.tx + wasDragged.dispX);
+        const dy = wasDragged.y - (wasDragged.ty + wasDragged.dispY);
+        const moved = Math.sqrt(dx * dx + dy * dy);
+
+        // Release: let spring physics pull it back
+        draggedRef.current = null;
+        canvas.style.cursor = "crosshair";
+
+        if (moved < 8) {
+          // Treat as click — navigate
+          window.open(wasDragged.node!.url, "_blank", "noopener,noreferrer");
+        }
+        setTooltip((t) => ({ ...t, visible: false }));
+      }
+    },
+    [getCanvasPos]
   );
 
   const handleMouseLeave = useCallback(() => {
+    if (draggedRef.current) {
+      draggedRef.current = null;
+    }
     hoveredRef.current = null;
     setTooltip((t) => ({ ...t, visible: false }));
   }, []);
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      for (const p of particlesRef.current) {
-        if (!p.isNamed) continue;
-        const dx = p.x - mx;
-        const dy = p.y - my;
-        if (Math.sqrt(dx * dx + dy * dy) < NAMED_R * 5.5) {
-          window.open(p.node!.url, "_blank", "noopener,noreferrer");
-          break;
-        }
+  // ── Touch events ───────────────────────────────────────────────────────────
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      const { x, y } = getCanvasPos(touch.clientX, touch.clientY);
+      const found = findNamedAt(x, y);
+      if (found) {
+        draggedRef.current = found;
+        dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
+        hoveredRef.current = found;
+        setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
+        e.preventDefault(); // prevent scroll while dragging node
+      }
+    },
+    [getCanvasPos, findNamedAt]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if (!draggedRef.current) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const { x, y } = getCanvasPos(touch.clientX, touch.clientY);
+      const p = draggedRef.current;
+      p.x = x + dragOffsetRef.current.dx;
+      p.y = y + dragOffsetRef.current.dy;
+      setTooltip({ x: p.x, y: p.y, label: p.node!.label, visible: true });
+      e.preventDefault();
+    },
+    [getCanvasPos]
+  );
+
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      const wasDragged = draggedRef.current;
+      if (!wasDragged) return;
+
+      const dx = wasDragged.x - (wasDragged.tx + wasDragged.dispX);
+      const dy = wasDragged.y - (wasDragged.ty + wasDragged.dispY);
+      const moved = Math.sqrt(dx * dx + dy * dy);
+
+      draggedRef.current = null;
+      hoveredRef.current = null;
+      setTooltip((t) => ({ ...t, visible: false }));
+
+      if (moved < 10) {
+        window.open(wasDragged.node!.url, "_blank", "noopener,noreferrer");
       }
     },
     []
@@ -454,13 +601,17 @@ export default function SignalField({ nodes }: SignalFieldProps) {
     >
       <canvas
         ref={canvasRef}
-        style={{ display: "block", width: "100%", height: "100%" }}
+        style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
+        onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
-        onClick={handleClick}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       />
 
-      {/* Hover tooltip — larger label on hover */}
+      {/* Hover / drag tooltip */}
       <div
         style={{
           position: "absolute",

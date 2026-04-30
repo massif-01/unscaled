@@ -2,9 +2,13 @@
  * Home — Unscaled "Signal in the Void"
  * Nav nodes are loaded dynamically from the database via tRPC.
  * Falls back to static defaults if the API returns empty (e.g. first load).
+ *
+ * Layout:
+ *   Desktop (≥ 640px): side-by-side — wordmark left 38%, signal field right 62%
+ *   Mobile  (< 640px): stacked — wordmark top ~35vh, signal field bottom ~65vh
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import SignalField, { NavNode } from "@/components/SignalField";
 
@@ -29,8 +33,24 @@ const FALLBACK_NODES: NavNode[] = [
   { id: "info",    label: "Info",    url: "https://unscaled.me/info" },
 ];
 
+// Simple breakpoint hook — re-evaluates on resize
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 640 : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    setMobile(mq.matches);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return mobile;
+}
+
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 100);
@@ -43,7 +63,6 @@ export default function Home() {
     staleTime: 30_000,
   });
 
-  // Map DB rows to SignalField NavNode shape
   const navNodes: NavNode[] =
     dbNodes && dbNodes.length > 0
       ? dbNodes.map((n) => ({
@@ -59,8 +78,9 @@ export default function Home() {
     <div
       style={{
         width: "100vw",
-        height: "100vh",
+        height: "100dvh",           // dvh handles iOS Safari toolbar correctly
         display: "flex",
+        flexDirection: isMobile ? "column" : "row",
         overflow: "hidden",
         background: "oklch(0.98 0.008 85)",
         position: "relative",
@@ -70,23 +90,42 @@ export default function Home() {
       {/* SEO: visually hidden H2 */}
       <h2 style={srOnly}>Unscaled — Podcast, AI, GitHub &amp; essays beyond hardware metrics.</h2>
 
-      {/* ── Left: Wordmark ─────────────────────────────────────────────── */}
+      {/* ── Wordmark ─────────────────────────────────────────────────────── */}
       <div
-        style={{
-          width: "38%",
-          minWidth: "260px",
-          maxWidth: "520px",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          paddingLeft: "clamp(2.2rem, 5.5vw, 5.5rem)",
-          paddingRight: "1.5rem",
-          position: "relative",
-          zIndex: 2,
-          flexShrink: 0,
-        }}
+        style={
+          isMobile
+            ? {
+                // Mobile: top strip, fixed height
+                width: "100%",
+                height: "34dvh",
+                flexShrink: 0,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "flex-end",
+                paddingLeft: "clamp(1.8rem, 8vw, 3rem)",
+                paddingRight: "clamp(1.8rem, 8vw, 3rem)",
+                paddingBottom: "1.4rem",
+                position: "relative",
+                zIndex: 2,
+              }
+            : {
+                // Desktop: left column
+                width: "38%",
+                minWidth: "260px",
+                maxWidth: "520px",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                paddingLeft: "clamp(2.2rem, 5.5vw, 5.5rem)",
+                paddingRight: "1.5rem",
+                position: "relative",
+                zIndex: 2,
+                flexShrink: 0,
+              }
+        }
       >
+        {/* H1 Wordmark */}
         <div
           style={{
             opacity: mounted ? 1 : 0,
@@ -99,7 +138,9 @@ export default function Home() {
             style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontWeight: 700,
-              fontSize: "clamp(3.8rem, 7.5vw, 8.5rem)",
+              fontSize: isMobile
+                ? "clamp(3.6rem, 16vw, 5.5rem)"
+                : "clamp(3.8rem, 7.5vw, 8.5rem)",
               lineHeight: 0.92,
               letterSpacing: "0.04em",
               color: "oklch(0.12 0.008 60)",
@@ -112,6 +153,7 @@ export default function Home() {
           </h1>
         </div>
 
+        {/* Tagline */}
         <div
           style={{
             opacity: mounted ? 1 : 0,
@@ -125,10 +167,12 @@ export default function Home() {
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontStyle: "italic",
               fontWeight: 300,
-              fontSize: "clamp(1rem, 1.5vw, 1.3rem)",
+              fontSize: isMobile
+                ? "clamp(0.95rem, 3.8vw, 1.15rem)"
+                : "clamp(1rem, 1.5vw, 1.3rem)",
               letterSpacing: "0.015em",
               color: "oklch(0.50 0.010 65)",
-              marginTop: "clamp(1rem, 2vw, 1.8rem)",
+              marginTop: isMobile ? "0.6rem" : "clamp(1rem, 2vw, 1.8rem)",
               marginBottom: 0,
               lineHeight: 1.55,
               maxWidth: "20ch",
@@ -141,73 +185,109 @@ export default function Home() {
         </div>
 
         {/* Hairline */}
-        <div
-          style={{
-            width: mounted ? "clamp(2rem, 3.5vw, 3rem)" : "0px",
-            height: "1px",
-            background: "oklch(0.72 0.008 65)",
-            marginTop: "clamp(1.8rem, 3vw, 2.8rem)",
-            transition: "width 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s",
-          }}
-        />
-
-        <div
-          style={{
-            opacity: mounted ? 0.55 : 0,
-            transition: "opacity 2s ease 0.7s",
-          }}
-        >
-          <span
+        {!isMobile && (
+          <div
             style={{
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "clamp(8px, 0.85vw, 10px)",
-              letterSpacing: "0.18em",
-              color: "oklch(0.60 0.008 65)",
-              marginTop: "clamp(0.9rem, 1.5vw, 1.3rem)",
-              display: "block",
-              textTransform: "uppercase",
+              width: mounted ? "clamp(2rem, 3.5vw, 3rem)" : "0px",
+              height: "1px",
+              background: "oklch(0.72 0.008 65)",
+              marginTop: "clamp(1.8rem, 3vw, 2.8rem)",
+              transition: "width 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.4s",
+            }}
+          />
+        )}
+
+        {/* Domain */}
+        {!isMobile && (
+          <div
+            style={{
+              opacity: mounted ? 0.55 : 0,
+              transition: "opacity 2s ease 0.7s",
             }}
           >
-            unscaled.me
-          </span>
-        </div>
+            <span
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "clamp(8px, 0.85vw, 10px)",
+                letterSpacing: "0.18em",
+                color: "oklch(0.60 0.008 65)",
+                marginTop: "clamp(0.9rem, 1.5vw, 1.3rem)",
+                display: "block",
+                textTransform: "uppercase",
+              }}
+            >
+              unscaled.me
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── Vertical Divider ────────────────────────────────────────────── */}
-      <div
-        style={{
-          width: "1px",
-          height: "35%",
-          alignSelf: "center",
-          background:
-            "linear-gradient(to bottom, transparent, oklch(0.80 0.006 65) 25%, oklch(0.80 0.006 65) 75%, transparent)",
-          flexShrink: 0,
-          opacity: mounted ? 0.65 : 0,
-          transition: "opacity 2s ease 0.5s",
-        }}
-      />
+      {/* ── Vertical Divider (desktop only) ─────────────────────────────── */}
+      {!isMobile && (
+        <div
+          style={{
+            width: "1px",
+            height: "35%",
+            alignSelf: "center",
+            background:
+              "linear-gradient(to bottom, transparent, oklch(0.80 0.006 65) 25%, oklch(0.80 0.006 65) 75%, transparent)",
+            flexShrink: 0,
+            opacity: mounted ? 0.65 : 0,
+            transition: "opacity 2s ease 0.5s",
+          }}
+        />
+      )}
 
-      {/* ── Right: Signal Field ─────────────────────────────────────────── */}
+      {/* ── Horizontal Divider (mobile only) ────────────────────────────── */}
+      {isMobile && (
+        <div
+          style={{
+            width: "35%",
+            height: "1px",
+            alignSelf: "center",
+            marginLeft: "clamp(1.8rem, 8vw, 3rem)",
+            background:
+              "linear-gradient(to right, oklch(0.80 0.006 65) 60%, transparent)",
+            flexShrink: 0,
+            opacity: mounted ? 0.5 : 0,
+            transition: "opacity 2s ease 0.5s",
+          }}
+        />
+      )}
+
+      {/* ── Signal Field ─────────────────────────────────────────────────── */}
       <div
-        style={{
-          flex: 1,
-          height: "100%",
-          position: "relative",
-          minWidth: 0,
-          opacity: mounted ? 1 : 0,
-          transition: "opacity 1.8s ease 0.25s",
-        }}
+        style={
+          isMobile
+            ? {
+                // Mobile: fills remaining height
+                width: "100%",
+                flex: 1,
+                position: "relative",
+                minHeight: 0,
+                opacity: mounted ? 1 : 0,
+                transition: "opacity 1.8s ease 0.25s",
+              }
+            : {
+                flex: 1,
+                height: "100%",
+                position: "relative",
+                minWidth: 0,
+                opacity: mounted ? 1 : 0,
+                transition: "opacity 1.8s ease 0.25s",
+              }
+        }
       >
         <SignalField nodes={navNodes} />
-        <HoverHint />
+        <HoverHint isMobile={isMobile} />
       </div>
 
-      {/* ── Bottom-left meta ────────────────────────────────────────────── */}
+      {/* ── Bottom-left meta ─────────────────────────────────────────────── */}
       <div
         style={{
           position: "absolute",
-          bottom: "clamp(1.2rem, 2.5vw, 2rem)",
-          left: "clamp(2.2rem, 5.5vw, 5.5rem)",
+          bottom: isMobile ? "0.8rem" : "clamp(1.2rem, 2.5vw, 2rem)",
+          left: isMobile ? "clamp(1.8rem, 8vw, 3rem)" : "clamp(2.2rem, 5.5vw, 5.5rem)",
           fontFamily: "'Space Mono', monospace",
           fontSize: "8px",
           letterSpacing: "0.18em",
@@ -223,7 +303,7 @@ export default function Home() {
   );
 }
 
-function HoverHint() {
+function HoverHint({ isMobile }: { isMobile: boolean }) {
   const [vis, setVis] = useState(true);
   useEffect(() => {
     const t = setTimeout(() => setVis(false), 5500);
@@ -233,8 +313,8 @@ function HoverHint() {
     <div
       style={{
         position: "absolute",
-        bottom: "clamp(1.2rem, 2.5vw, 2rem)",
-        right: "clamp(1.5rem, 3vw, 2.5rem)",
+        bottom: isMobile ? "0.8rem" : "clamp(1.2rem, 2.5vw, 2rem)",
+        right: isMobile ? "1rem" : "clamp(1.5rem, 3vw, 2.5rem)",
         fontFamily: "'Space Mono', monospace",
         fontSize: "8px",
         letterSpacing: "0.16em",
@@ -245,7 +325,7 @@ function HoverHint() {
         textTransform: "uppercase",
       }}
     >
-      hover nodes to navigate
+      {isMobile ? "tap nodes to navigate" : "hover nodes to navigate"}
     </div>
   );
 }
