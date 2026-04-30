@@ -27,10 +27,11 @@ const srOnly: React.CSSProperties = {
 
 // Static fallback nodes — used while DB loads or if DB is empty
 const FALLBACK_NODES: NavNode[] = [
-  { id: "github",  label: "Github",  url: "https://github.com/massif-01" },
-  { id: "podcast", label: "Podcast", url: "https://unscaled.podcast.xyz" },
-  { id: "ai",      label: "AI",      url: "/ai" },
-  { id: "info",    label: "Info",    url: "/info" },
+  { id: "github",   label: "Github",   url: "https://github.com/massif-01" },
+  { id: "podcast",  label: "Podcast",  url: "https://unscaled.podcast.xyz" },
+  { id: "ai",       label: "AI",       url: "/ai" },
+  { id: "info",     label: "Info",     url: "/info" },
+  { id: "auracap",  label: "AuraCAP",  url: "https://github.com/massif-01/AuraCap" },
 ];
 
 // Simple breakpoint hook
