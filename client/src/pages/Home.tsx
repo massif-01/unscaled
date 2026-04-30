@@ -68,10 +68,7 @@ export default function Home() {
       }}
     >
       {/* SEO: visually hidden H2 */}
-      <h2 style={srOnly}>
-        Unscaled — Personal space for podcast, AI experiments, GitHub projects,
-        and essays beyond hardware metrics.
-      </h2>
+      <h2 style={srOnly}>Unscaled — Podcast, AI, GitHub &amp; essays beyond hardware metrics.</h2>
 
       {/* ── Left: Wordmark ─────────────────────────────────────────────── */}
       <div
