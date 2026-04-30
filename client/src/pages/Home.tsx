@@ -4,11 +4,11 @@
  * Falls back to static defaults if the API returns empty (e.g. first load).
  *
  * Layout:
- *   Desktop (≥ 640px): side-by-side — wordmark left 38%, signal field right 62%
- *   Mobile  (< 640px): stacked — wordmark top ~35vh, signal field bottom ~65vh
+ *   Desktop (≥ 640px): side-by-side — wordmark left 46%, signal field right 54%
+ *   Mobile  (< 640px): side-by-side — wordmark left 42%, signal field right 58%
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import SignalField, { NavNode } from "@/components/SignalField";
 
@@ -29,11 +29,11 @@ const srOnly: React.CSSProperties = {
 const FALLBACK_NODES: NavNode[] = [
   { id: "github",  label: "Github",  url: "https://github.com/massif-01" },
   { id: "podcast", label: "Podcast", url: "https://unscaled.podcast.xyz" },
-  { id: "ai",      label: "AI",      url: "https://unscaled.me/ai" },
-  { id: "info",    label: "Info",    url: "https://unscaled.me/info" },
+  { id: "ai",      label: "AI",      url: "/ai" },
+  { id: "info",    label: "Info",    url: "/info" },
 ];
 
-// Simple breakpoint hook — re-evaluates on resize
+// Simple breakpoint hook
 function useIsMobile() {
   const [mobile, setMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 640 : false
@@ -74,13 +74,27 @@ export default function Home() {
         }))
       : FALLBACK_NODES;
 
+  // Both mobile and desktop use side-by-side layout.
+  // Mobile: wordmark 42vw | desktop: wordmark 46%
+  const wordmarkWidth = isMobile ? "42vw" : "46%";
+  const wordmarkPadLeft = isMobile
+    ? "clamp(1.2rem, 5vw, 2rem)"
+    : "clamp(2.2rem, 5.5vw, 5.5rem)";
+  const wordmarkPadRight = isMobile ? "0.8rem" : "2rem";
+  const h1FontSize = isMobile
+    ? "clamp(2.2rem, 9vw, 3.4rem)"
+    : "clamp(3.8rem, 6.5vw, 8rem)";
+  const taglineFontSize = isMobile
+    ? "clamp(0.72rem, 2.8vw, 0.92rem)"
+    : "clamp(1rem, 1.4vw, 1.25rem)";
+
   return (
     <div
       style={{
         width: "100vw",
-        height: "100dvh",           // dvh handles iOS Safari toolbar correctly
+        height: "100dvh",
         display: "flex",
-        flexDirection: isMobile ? "column" : "row",
+        flexDirection: "row",   // always side-by-side
         overflow: "hidden",
         background: "oklch(0.98 0.008 85)",
         position: "relative",
@@ -92,38 +106,18 @@ export default function Home() {
 
       {/* ── Wordmark ─────────────────────────────────────────────────────── */}
       <div
-        style={
-          isMobile
-            ? {
-                // Mobile: top strip, fixed height
-                width: "100%",
-                height: "34dvh",
-                flexShrink: 0,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "flex-end",
-                paddingLeft: "clamp(1.8rem, 8vw, 3rem)",
-                paddingRight: "clamp(1.8rem, 8vw, 3rem)",
-                paddingBottom: "1.4rem",
-                position: "relative",
-                zIndex: 2,
-              }
-            : {
-                // Desktop: left column
-                width: "38%",
-                minWidth: "260px",
-                maxWidth: "520px",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                paddingLeft: "clamp(2.2rem, 5.5vw, 5.5rem)",
-                paddingRight: "1.5rem",
-                position: "relative",
-                zIndex: 2,
-                flexShrink: 0,
-              }
-        }
+        style={{
+          width: wordmarkWidth,
+          flexShrink: 0,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          paddingLeft: wordmarkPadLeft,
+          paddingRight: wordmarkPadRight,
+          position: "relative",
+          zIndex: 2,
+        }}
       >
         {/* H1 Wordmark */}
         <div
@@ -138,9 +132,7 @@ export default function Home() {
             style={{
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontWeight: 700,
-              fontSize: isMobile
-                ? "clamp(3.6rem, 16vw, 5.5rem)"
-                : "clamp(3.8rem, 7.5vw, 8.5rem)",
+              fontSize: h1FontSize,
               lineHeight: 0.92,
               letterSpacing: "0.04em",
               color: "oklch(0.12 0.008 60)",
@@ -167,15 +159,13 @@ export default function Home() {
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontStyle: "italic",
               fontWeight: 300,
-              fontSize: isMobile
-                ? "clamp(0.95rem, 3.8vw, 1.15rem)"
-                : "clamp(1rem, 1.5vw, 1.3rem)",
+              fontSize: taglineFontSize,
               letterSpacing: "0.015em",
               color: "oklch(0.50 0.010 65)",
-              marginTop: isMobile ? "0.6rem" : "clamp(1rem, 2vw, 1.8rem)",
+              marginTop: isMobile ? "0.5rem" : "clamp(1rem, 2vw, 1.8rem)",
               marginBottom: 0,
               lineHeight: 1.55,
-              maxWidth: "20ch",
+              maxWidth: "18ch",
             }}
           >
             The observer's freedom.
@@ -184,7 +174,7 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Hairline */}
+        {/* Hairline — desktop only */}
         {!isMobile && (
           <div
             style={{
@@ -197,7 +187,7 @@ export default function Home() {
           />
         )}
 
-        {/* Domain */}
+        {/* Domain — desktop only */}
         {!isMobile && (
           <div
             style={{
@@ -222,61 +212,31 @@ export default function Home() {
         )}
       </div>
 
-      {/* ── Vertical Divider (desktop only) ─────────────────────────────── */}
-      {!isMobile && (
-        <div
-          style={{
-            width: "1px",
-            height: "35%",
-            alignSelf: "center",
-            background:
-              "linear-gradient(to bottom, transparent, oklch(0.80 0.006 65) 25%, oklch(0.80 0.006 65) 75%, transparent)",
-            flexShrink: 0,
-            opacity: mounted ? 0.65 : 0,
-            transition: "opacity 2s ease 0.5s",
-          }}
-        />
-      )}
-
-      {/* ── Horizontal Divider (mobile only) ────────────────────────────── */}
-      {isMobile && (
-        <div
-          style={{
-            width: "35%",
-            height: "1px",
-            alignSelf: "center",
-            marginLeft: "clamp(1.8rem, 8vw, 3rem)",
-            background:
-              "linear-gradient(to right, oklch(0.80 0.006 65) 60%, transparent)",
-            flexShrink: 0,
-            opacity: mounted ? 0.5 : 0,
-            transition: "opacity 2s ease 0.5s",
-          }}
-        />
-      )}
+      {/* ── Vertical Divider ─────────────────────────────────────────────── */}
+      {/* Positioned at the right edge of the wordmark column, always visible */}
+      <div
+        style={{
+          width: "1px",
+          height: isMobile ? "28%" : "35%",
+          alignSelf: "center",
+          background:
+            "linear-gradient(to bottom, transparent, oklch(0.80 0.006 65) 25%, oklch(0.80 0.006 65) 75%, transparent)",
+          flexShrink: 0,
+          opacity: mounted ? 0.65 : 0,
+          transition: "opacity 2s ease 0.5s",
+        }}
+      />
 
       {/* ── Signal Field ─────────────────────────────────────────────────── */}
       <div
-        style={
-          isMobile
-            ? {
-                // Mobile: fills remaining height
-                width: "100%",
-                flex: 1,
-                position: "relative",
-                minHeight: 0,
-                opacity: mounted ? 1 : 0,
-                transition: "opacity 1.8s ease 0.25s",
-              }
-            : {
-                flex: 1,
-                height: "100%",
-                position: "relative",
-                minWidth: 0,
-                opacity: mounted ? 1 : 0,
-                transition: "opacity 1.8s ease 0.25s",
-              }
-        }
+        style={{
+          flex: 1,
+          height: "100%",
+          position: "relative",
+          minWidth: 0,
+          opacity: mounted ? 1 : 0,
+          transition: "opacity 1.8s ease 0.25s",
+        }}
       >
         <SignalField nodes={navNodes} />
         <HoverHint isMobile={isMobile} />
@@ -286,10 +246,10 @@ export default function Home() {
       <div
         style={{
           position: "absolute",
-          bottom: isMobile ? "0.8rem" : "clamp(1.2rem, 2.5vw, 2rem)",
-          left: isMobile ? "clamp(1.8rem, 8vw, 3rem)" : "clamp(2.2rem, 5.5vw, 5.5rem)",
+          bottom: isMobile ? "0.6rem" : "clamp(1.2rem, 2.5vw, 2rem)",
+          left: isMobile ? "clamp(1.2rem, 5vw, 2rem)" : "clamp(2.2rem, 5.5vw, 5.5rem)",
           fontFamily: "'Space Mono', monospace",
-          fontSize: "8px",
+          fontSize: "7px",
           letterSpacing: "0.18em",
           color: "oklch(0.68 0.006 65)",
           opacity: mounted ? 0.5 : 0,
@@ -313,10 +273,10 @@ function HoverHint({ isMobile }: { isMobile: boolean }) {
     <div
       style={{
         position: "absolute",
-        bottom: isMobile ? "0.8rem" : "clamp(1.2rem, 2.5vw, 2rem)",
-        right: isMobile ? "1rem" : "clamp(1.5rem, 3vw, 2.5rem)",
+        bottom: isMobile ? "0.6rem" : "clamp(1.2rem, 2.5vw, 2rem)",
+        right: isMobile ? "0.6rem" : "clamp(1.5rem, 3vw, 2.5rem)",
         fontFamily: "'Space Mono', monospace",
-        fontSize: "8px",
+        fontSize: "7px",
         letterSpacing: "0.16em",
         color: "oklch(0.60 0.008 65)",
         opacity: vis ? 0.45 : 0,
@@ -325,7 +285,7 @@ function HoverHint({ isMobile }: { isMobile: boolean }) {
         textTransform: "uppercase",
       }}
     >
-      {isMobile ? "tap nodes to navigate" : "hover nodes to navigate"}
+      {isMobile ? "tap · drag · explore" : "hover · drag · explore"}
     </div>
   );
 }
