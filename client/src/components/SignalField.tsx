@@ -525,7 +525,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
         if (moved < 8) {
           // Treat as click — navigate
-          window.open(wasDragged.node!.url, "_blank", "noopener,noreferrer");
+          window.location.href = wasDragged.node!.url;
         }
         setTooltip((t) => ({ ...t, visible: false }));
       }
@@ -588,7 +588,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       setTooltip((t) => ({ ...t, visible: false }));
 
       if (moved < 10) {
-        window.open(wasDragged.node!.url, "_blank", "noopener,noreferrer");
+        window.location.href = wasDragged.node!.url;
       }
     },
     []
