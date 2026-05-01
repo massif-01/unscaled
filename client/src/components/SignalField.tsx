@@ -494,7 +494,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           canvas.style.cursor = "grab";
         } else {
           setTooltip((t) => ({ ...t, visible: false }));
-          canvas.style.cursor = "crosshair";
+          canvas.style.cursor = "default";
         }
       }
     },
@@ -516,7 +516,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
         // Release: let spring physics pull it back
         draggedRef.current = null;
-        canvas.style.cursor = "crosshair";
+        canvas.style.cursor = "default";
 
         if (moved < 8) {
           // Treat as click — navigate
@@ -592,7 +592,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
   return (
     <div
       ref={containerRef}
-      style={{ position: "relative", width: "100%", height: "100%", cursor: "crosshair" }}
+      style={{ position: "relative", width: "100%", height: "100%" }}
     >
       <canvas
         ref={canvasRef}
