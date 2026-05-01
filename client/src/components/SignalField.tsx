@@ -176,10 +176,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           drifting,
           driftPhaseX: rand(0, Math.PI * 2),
           driftPhaseY: rand(0, Math.PI * 2),
-          driftSpeedX: rand(0.0012, 0.0028),
-          driftSpeedY: rand(0.0010, 0.0024),
-          driftAmpX: drifting ? rand(2, 6) : 0,
-          driftAmpY: drifting ? rand(2, 5) : 0,
+          driftSpeedX: rand(0.0035, 0.0065),
+          driftSpeedY: rand(0.0032, 0.0058),
+          driftAmpX: drifting ? rand(4, 10) : 0,
+          driftAmpY: drifting ? rand(3.5, 9) : 0,
         });
       }
 
