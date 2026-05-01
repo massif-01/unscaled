@@ -287,15 +287,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             p.y = p.ty + p.dispY;
           }
         } else if (p.isNamed && p !== dragged) {
-          // Non-dragged named nodes: spring back if displaced
-          p.velX += -SPRING_K * p.dispX;
-          p.velY += -SPRING_K * p.dispY;
-          p.velX *= DAMPING;
-          p.velY *= DAMPING;
-          p.dispX += p.velX;
-          p.dispY += p.velY;
-          p.x = p.tx + p.dispX;
-          p.y = p.ty + p.dispY;
+          // Non-dragged named nodes: always stay at fixed position
+          // No drift, no spring, no displacement
+          p.x = p.tx;
+          p.y = p.ty;
         }
 
         p.breathPhase += p.breathSpeed;
