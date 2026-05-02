@@ -79,7 +79,7 @@ export default function Home() {
   // Mobile: wordmark 42vw | desktop: wordmark 46%
   const wordmarkWidth = isMobile ? "42vw" : "46%";
   const wordmarkPadLeft = isMobile
-    ? "clamp(1.8rem, 6.5vw, 2.8rem)"
+    ? "clamp(1.2rem, 4vw, 1.8rem)"
     : "clamp(3.2rem, 7vw, 6.5rem)";
   const wordmarkPadRight = isMobile ? "0.6rem" : "1.2rem";
   const h1FontSize = isMobile
