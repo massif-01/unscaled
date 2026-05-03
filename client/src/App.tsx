@@ -4,7 +4,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 
-const Admin = lazy(() => import("./pages/Admin"));
+const AdminRoute = lazy(() => import("./pages/AdminRoute"));
 const AiPage = lazy(() => import("./pages/AiPage"));
 const InfoPage = lazy(() => import("./pages/InfoPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -15,7 +15,7 @@ function Router() {
     <Suspense fallback={null}>
       <Switch>
         <Route path={"/"} component={Home} />
-        <Route path={"/admin"} component={Admin} />
+        <Route path={"/admin"} component={AdminRoute} />
         <Route path={"/ai"} component={AiPage} />
         <Route path={"/info"} component={InfoPage} />
         <Route path={"/404"} component={NotFound} />
