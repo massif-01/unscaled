@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { getVisibleNavNodes } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,6 +37,26 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+
+  app.get("/api/nav-nodes", async (_req, res) => {
+    res.set("Cache-Control", "no-store");
+    try {
+      const nodes = await getVisibleNavNodes();
+      res.json(
+        nodes.map(({ id, label, url, posX, posY }) => ({
+          id,
+          label,
+          url,
+          posX,
+          posY,
+        }))
+      );
+    } catch (error) {
+      console.error("[Nav Nodes] Failed to load public nav nodes:", error);
+      res.status(500).json({ error: "Failed to load nav nodes" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

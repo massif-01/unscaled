@@ -1,6 +1,6 @@
 /*
  * Home — Unscaled "Signal in the Void"
- * Nav nodes are loaded dynamically from the database via tRPC.
+ * Nav nodes are loaded dynamically from a lightweight public JSON endpoint.
  * Falls back to static defaults if the API returns empty (e.g. first load).
  *
  * Layout:
@@ -9,8 +9,15 @@
  */
 
 import { useEffect, useState } from "react";
-import { trpc } from "@/lib/trpc";
 import SignalField, { NavNode } from "@/components/SignalField";
+
+type PublicNavNode = {
+  id: string | number;
+  label: string;
+  url: string;
+  posX?: string | null;
+  posY?: string | null;
+};
 
 // SEO: visually hidden utility
 const srOnly: React.CSSProperties = {
@@ -34,6 +41,36 @@ const FALLBACK_NODES: NavNode[] = [
   { id: "auracap",  label: "AuraCAP",  url: "https://github.com/massif-01/AuraCap" },
 ];
 
+function isPublicNavNode(value: unknown): value is PublicNavNode {
+  if (!value || typeof value !== "object") return false;
+  const node = value as Record<string, unknown>;
+  const hasValidId =
+    typeof node.id === "string" || typeof node.id === "number";
+  return (
+    hasValidId &&
+    typeof node.label === "string" &&
+    node.label.trim().length > 0 &&
+    typeof node.url === "string" &&
+    node.url.trim().length > 0
+  );
+}
+
+function parsePosition(value: string | null | undefined) {
+  if (!value) return undefined;
+  const parsed = parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function toNavNode(node: PublicNavNode): NavNode {
+  return {
+    id: String(node.id),
+    label: node.label,
+    url: node.url,
+    nx: parsePosition(node.posX),
+    ny: parsePosition(node.posY),
+  };
+}
+
 // Simple breakpoint hook
 function useIsMobile() {
   const [mobile, setMobile] = useState(() =>
@@ -51,6 +88,7 @@ function useIsMobile() {
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [dbNodes, setDbNodes] = useState<NavNode[] | null>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -59,20 +97,39 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  // Load nav nodes from DB
-  const { data: dbNodes } = trpc.nodes.list.useQuery(undefined, {
-    staleTime: 30_000,
-  });
+  // Load nav nodes from DB through a small public JSON endpoint.
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadNavNodes() {
+      try {
+        const response = await fetch("/api/nav-nodes", {
+          signal: controller.signal,
+          credentials: "same-origin",
+        });
+        if (!response.ok) return;
+
+        const payload: unknown = await response.json();
+        if (!Array.isArray(payload)) return;
+        if (!payload.every(isPublicNavNode)) return;
+
+        const nodes = payload.map(toNavNode);
+        if (!controller.signal.aborted && nodes.length > 0) {
+          setDbNodes(nodes);
+        }
+      } catch {
+        // Keep the static fallback on network or parsing failures.
+      }
+    }
+
+    void loadNavNodes();
+
+    return () => controller.abort();
+  }, []);
 
   const navNodes: NavNode[] =
     dbNodes && dbNodes.length > 0
-      ? dbNodes.map((n) => ({
-          id: String(n.id),
-          label: n.label,
-          url: n.url,
-          nx: n.posX ? parseFloat(n.posX) : undefined,
-          ny: n.posY ? parseFloat(n.posY) : undefined,
-        }))
+      ? dbNodes
       : FALLBACK_NODES;
 
   // Both mobile and desktop use side-by-side layout.
