@@ -405,19 +405,12 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             ctx.stroke();
           }
 
-          // Micro-label
+          // Micro-label (hidden while dragging to avoid overlap with DOM tooltip)
           if (eo > 0.6 && !isHov && !isDrag) {
             ctx.font = `400 9px 'Space Mono', monospace`;
             ctx.fillStyle = `rgba(64,64,192,${fo * 0.55})`;
             ctx.textAlign = "center";
             ctx.fillText(p.node!.label.toUpperCase(), p.x, p.y - r * 2.2 - 4);
-          }
-          // Larger label while dragging
-          if (isDrag) {
-            ctx.font = `700 11px 'Space Mono', monospace`;
-            ctx.fillStyle = `rgba(64,64,192,${fo * 0.9})`;
-            ctx.textAlign = "center";
-            ctx.fillText(p.node!.label.toUpperCase(), p.x, p.y - r * 2.8 - 6);
           }
         } else {
           const opBase = p.opacity * (1 + Math.sin(p.breathPhase) * p.breathAmp * 0.5);
