@@ -7,12 +7,6 @@
  * - Drag named nodes (mouse + touch): surrounding particles are repelled
  *   with spring-back physics when released
  * - ~25% background particles drift with slow sinusoidal breathing
- *
- * Performance optimizations:
- * 1. Spatial grid for line detection (O(n) instead of O(n²))
- * 2. Early distance checks to avoid unnecessary sqrt
- * 3. Batched Canvas state changes
- * 4. Tooltip via ref instead of state (no re-render)
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -28,10 +22,13 @@ export interface NavNode {
 interface Particle {
   x: number;
   y: number;
+  // Anchor (home) position — particles spring back here
   tx: number;
   ty: number;
+  // Displacement from anchor caused by repulsion
   dispX: number;
   dispY: number;
+  // Velocity for spring physics
   velX: number;
   velY: number;
   vx: number;
@@ -49,6 +46,7 @@ interface Particle {
   entranceT: number;
   entranceDelay: number;
   entranceDone: boolean;
+  // Drift breathing
   drifting: boolean;
   driftPhaseX: number;
   driftPhaseY: number;
@@ -68,13 +66,11 @@ const NAMED_R = 5.0;
 const BG_R_MIN = 0.9;
 const BG_R_MAX = 2.4;
 
-const REPEL_RADIUS = 120;
-const REPEL_STRENGTH = 0.9;
-const SPRING_K = 0.055;
-const DAMPING = 0.78;
-
-// Spatial grid cell size for line detection
-const GRID_CELL_SIZE = 180;
+// Repulsion physics constants
+const REPEL_RADIUS = 120;   // px — how far the drag repels particles
+const REPEL_STRENGTH = 0.9; // force multiplier
+const SPRING_K = 0.055;     // spring stiffness for return
+const DAMPING = 0.78;       // velocity damping (0–1)
 
 function rand(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -95,52 +91,6 @@ const NAMED_POSITIONS = [
   { nx: 0.72, ny: 0.72 },
 ];
 
-// Spatial grid for fast neighbor lookup
-class SpatialGrid {
-  private cells: Map<string, Particle[]> = new Map();
-  private cellSize: number;
-
-  constructor(cellSize: number) {
-    this.cellSize = cellSize;
-  }
-
-  clear() {
-    this.cells.clear();
-  }
-
-  insert(p: Particle) {
-    const key = this.getCellKey(p.x, p.y);
-    if (!this.cells.has(key)) {
-      this.cells.set(key, []);
-    }
-    this.cells.get(key)!.push(p);
-  }
-
-  getNeighbors(x: number, y: number, radius: number): Particle[] {
-    const neighbors: Particle[] = [];
-    const cellX = Math.floor(x / this.cellSize);
-    const cellY = Math.floor(y / this.cellSize);
-    const cellRadius = Math.ceil(radius / this.cellSize);
-
-    for (let dx = -cellRadius; dx <= cellRadius; dx++) {
-      for (let dy = -cellRadius; dy <= cellRadius; dy++) {
-        const key = `${cellX + dx},${cellY + dy}`;
-        const cell = this.cells.get(key);
-        if (cell) {
-          neighbors.push(...cell);
-        }
-      }
-    }
-    return neighbors;
-  }
-
-  private getCellKey(x: number, y: number): string {
-    const cellX = Math.floor(x / this.cellSize);
-    const cellY = Math.floor(y / this.cellSize);
-    return `${cellX},${cellY}`;
-  }
-}
-
 export default function SignalField({ nodes }: SignalFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
@@ -151,15 +101,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
   const sizeRef = useRef({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
-  const gridRef = useRef(new SpatialGrid(GRID_CELL_SIZE));
-  
-  // Tooltip via ref instead of state — no re-render
-  const tooltipRef = useRef<{
-    x: number;
-    y: number;
-    label: string;
-    visible: boolean;
-  }>({ x: 0, y: 0, label: "", visible: false });
+
   const [tooltip, setTooltip] = useState<{
     x: number;
     y: number;
@@ -207,91 +149,126 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       });
 
       for (let i = 0; i < BG_COUNT; i++) {
-        const x = Math.random() * w;
-        const y = Math.random() * h;
+        const tx = rand(0.02 * w, 0.98 * w);
+        const ty = rand(0.03 * h, 0.97 * h);
+        const sa = rand(0, Math.PI * 2);
+        const sd = rand(30, 140);
         const drifting = Math.random() < 0.25;
         list.push({
-          x, y,
-          tx: x, ty: y,
+          x: tx + Math.cos(sa) * sd,
+          y: ty + Math.sin(sa) * sd,
+          tx, ty,
           dispX: 0, dispY: 0,
           velX: 0, velY: 0,
           vx: 0, vy: 0,
           radius: rand(BG_R_MIN, BG_R_MAX),
-          opacity: rand(0.35, 0.65),
+          opacity: rand(0.10, 0.45),
           isNamed: false,
           breathPhase: rand(0, Math.PI * 2),
-          breathSpeed: rand(0.003, 0.006),
-          breathAmp: 0.15,
+          breathSpeed: rand(0.002, 0.007),
+          breathAmp: rand(0.04, 0.13),
           rippleRadius: 0,
           rippleOpacity: 0,
           rippleActive: false,
           entranceT: 0,
-          entranceDelay: rand(0, 60),
+          entranceDelay: Math.floor(rand(0, 25)),
           entranceDone: false,
           drifting,
           driftPhaseX: rand(0, Math.PI * 2),
           driftPhaseY: rand(0, Math.PI * 2),
-          driftSpeedX: rand(0.008, 0.018),
-          driftSpeedY: rand(0.008, 0.018),
-          driftAmpX: rand(4, 10),
-          driftAmpY: rand(4, 10),
+          driftSpeedX: rand(0.0035, 0.0065),
+          driftSpeedY: rand(0.0032, 0.0058),
+          driftAmpX: drifting ? rand(4, 10) : 0,
+          driftAmpY: drifting ? rand(3.5, 9) : 0,
         });
       }
 
-      return list;
+      particlesRef.current = list;
     },
     [nodes]
   );
 
+  // Resize
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        const { width, height } = e.contentRect;
+        if (width > 0 && height > 0) {
+          sizeRef.current = { w: width, h: height };
+          initParticles(width, height);
+          const canvas = canvasRef.current;
+          if (canvas) {
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            const ctx = canvas.getContext("2d");
+            if (ctx) {
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+              ctx.scale(dpr, dpr);
+            }
+          }
+        }
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [initParticles]);
+
+  // Animation loop
   useEffect(() => {
     const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-    const w = container.clientWidth;
-    const h = container.clientHeight;
-    canvas.width = w;
-    canvas.height = h;
-    sizeRef.current = { w, h };
-
-    particlesRef.current = initParticles(w, h);
-
-    const tick = () => {
-      const ps = particlesRef.current;
-      const ctx = canvas.getContext("2d");
+    function tick() {
       if (!ctx) return;
+      const { w, h } = sizeRef.current;
+      if (w === 0) {
+        animRef.current = requestAnimationFrame(tick);
+        return;
+      }
 
       frameRef.current++;
+      const frame = frameRef.current;
+      ctx.clearRect(0, 0, w, h);
+
+      const ps = particlesRef.current;
       const dragged = draggedRef.current;
 
-      // Update particles
+      // ── Update ──────────────────────────────────────────────────────────
       for (const p of ps) {
-        p.entranceT += 0.016;
-
         if (!p.entranceDone) {
-          if (p.entranceT >= p.entranceDelay + 0.85) {
-            p.entranceDone = true;
+          if (frame > p.entranceDelay) {
+            p.entranceT = Math.min(1, p.entranceT + 0.055);
+            p.x = p.x + (p.tx - p.x) * 0.07;
+            p.y = p.y + (p.ty - p.y) * 0.07;
+            if (p.entranceT >= 1) {
+              p.x = p.tx;
+              p.y = p.ty;
+              p.entranceDone = true;
+            }
           }
         } else if (p === dragged) {
-          // Dragged node — apply repulsion
-          // Optimization 2: Use spatial grid to find nearby particles
-          const neighbors = gridRef.current.getNeighbors(p.x, p.y, REPEL_RADIUS);
-          for (const q of neighbors) {
+          // Dragged named node — position set externally by pointer events
+          // Apply repulsion to all other particles
+          for (const q of ps) {
             if (q === p || !q.entranceDone) continue;
             const dx = q.tx + q.dispX - p.x;
             const dy = q.ty + q.dispY - p.y;
-            const distSq = dx * dx + dy * dy;
-            // Early distance check: avoid sqrt if too far
-            if (distSq > REPEL_RADIUS * REPEL_RADIUS) continue;
-            const dist = Math.sqrt(distSq);
-            if (dist > 0) {
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < REPEL_RADIUS && dist > 0) {
               const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
+              // Push q away from dragged node
               q.velX -= (dx / dist) * force;
               q.velY -= (dy / dist) * force;
             }
           }
         } else if (!p.isNamed) {
           // Spring back toward anchor + drift
+          // Spring force: F = -k * disp
           p.velX += -SPRING_K * p.dispX;
           p.velY += -SPRING_K * p.dispY;
           p.velX *= DAMPING;
@@ -299,6 +276,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           p.dispX += p.velX;
           p.dispY += p.velY;
 
+          // Drift breathing on top of displacement
           if (p.drifting) {
             p.driftPhaseX += p.driftSpeedX;
             p.driftPhaseY += p.driftSpeedY;
@@ -309,6 +287,8 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             p.y = p.ty + p.dispY;
           }
         } else if (p.isNamed && p !== dragged) {
+          // Non-dragged named nodes: always stay at fixed position
+          // No drift, no spring, no displacement
           p.x = p.tx;
           p.y = p.ty;
         }
@@ -326,118 +306,100 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         }
       }
 
-      // Build spatial grid for line detection
-      gridRef.current.clear();
-      for (const p of ps) {
-        gridRef.current.insert(p);
-      }
-
-      // Clear canvas
-      ctx.fillStyle = "oklch(0.98 0.008 85)";
-      ctx.fillRect(0, 0, w, h);
-
+      // Entry opacity helper
       const entryOp = (p: Particle) => {
         if (p.entranceDone) return 1;
         return easeOutExpo(Math.max(0, p.entranceT - 0.15) / 0.85);
       };
 
-      // Optimization 1: Use spatial grid for line detection
-      // Only check neighbors within grid cells
-      const linesByStyle: Map<string, Array<[number, number, number, number]>> = new Map();
-
+      // ── Draw lines ──────────────────────────────────────────────────────
       for (let i = 0; i < ps.length; i++) {
         const a = ps[i];
         if (entryOp(a) < 0.1) continue;
-
-        const neighbors = gridRef.current.getNeighbors(a.x, a.y, MAX_DIST);
-        for (const b of neighbors) {
-          const bIdx = ps.indexOf(b);
-          if (bIdx <= i) continue; // Avoid duplicate lines
+        for (let j = i + 1; j < ps.length; j++) {
+          const b = ps[j];
           if (entryOp(b) < 0.1) continue;
-
           const dx = a.x - b.x;
           const dy = a.y - b.y;
-          const distSq = dx * dx + dy * dy;
-          const maxDistSq = MAX_DIST * MAX_DIST;
-          if (distSq >= maxDistSq) continue;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist >= MAX_DIST) continue;
 
-          const dist = Math.sqrt(distSq);
           const distAlpha = (1 - dist / MAX_DIST) * 0.30;
           const eo = Math.min(entryOp(a), entryOp(b));
 
           const isHovLine =
             (a === hoveredRef.current || b === hoveredRef.current) &&
             (a.isNamed || b.isNamed);
-          const isDragLine = a === dragged || b === dragged;
+          const isDragLine =
+            (a === dragged || b === dragged);
           const isNamedLine = a.isNamed || b.isNamed;
 
-          // Optimization 3: Batch lines by style
-          let style: string;
-          let lineWidth: number;
           if (isDragLine) {
-            style = `rgba(64,64,192,${Math.min(distAlpha * 4.5, 0.85) * eo})`;
-            lineWidth = 1.1;
+            ctx.strokeStyle = `rgba(64,64,192,${Math.min(distAlpha * 4.5, 0.85) * eo})`;
+            ctx.lineWidth = 1.1;
           } else if (isHovLine) {
-            style = `rgba(64,64,192,${Math.min(distAlpha * 3.5, 0.7) * eo})`;
-            lineWidth = 0.9;
+            ctx.strokeStyle = `rgba(64,64,192,${Math.min(distAlpha * 3.5, 0.7) * eo})`;
+            ctx.lineWidth = 0.9;
           } else if (isNamedLine) {
-            style = `rgba(64,64,192,${distAlpha * 0.55 * eo})`;
-            lineWidth = 0.5;
+            ctx.strokeStyle = `rgba(64,64,192,${distAlpha * 0.55 * eo})`;
+            ctx.lineWidth = 0.5;
           } else {
-            style = `rgba(190,182,170,${distAlpha * eo})`;
-            lineWidth = 0.4;
+            ctx.strokeStyle = `rgba(190,182,170,${distAlpha * eo})`;
+            ctx.lineWidth = 0.4;
           }
 
-          const key = `${style}|${lineWidth}`;
-          if (!linesByStyle.has(key)) {
-            linesByStyle.set(key, []);
-          }
-          linesByStyle.get(key)!.push([a.x, a.y, b.x, b.y]);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
         }
       }
 
-      // Draw batched lines
-      linesByStyle.forEach((lines, key) => {
-        const parts = key.split("|");
-        const style = parts[0];
-        const lineWidthStr = parts[1];
-        ctx.strokeStyle = style;
-        ctx.lineWidth = parseFloat(lineWidthStr);
-        for (const line of lines) {
-          const [x1, y1, x2, y2] = line;
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-        }
-      });
-
-      // Draw particles
+      // ── Draw particles ──────────────────────────────────────────────────
       for (const p of ps) {
         const eo = entryOp(p);
-        if (eo < 0.01) continue;
+        if (eo < 0.02) continue;
 
-        const r = p.radius;
-        const isHov = p === hoveredRef.current;
-        const isDrag = p === dragged;
-        const fo = p.opacity * eo;
+        const breathScale = 1 + Math.sin(p.breathPhase) * p.breathAmp;
+        const r = p.radius * breathScale;
 
         if (p.isNamed) {
+          const isHov = p === hoveredRef.current;
+          const isDrag = p === dragged;
+          const base = (isHov || isDrag) ? 1 : 0.85;
+          const fo = base * eo;
+
+          // Outer glow — larger when dragging
+          const glowR = r * (isDrag ? 7.0 : isHov ? 5.5 : 4.0);
+          const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+          grd.addColorStop(0, `rgba(64,64,192,${fo * (isDrag ? 0.38 : 0.28)})`);
+          grd.addColorStop(0.45, `rgba(64,64,192,${fo * 0.07})`);
+          grd.addColorStop(1, `rgba(64,64,192,0)`);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = grd;
+          ctx.fill();
+
+          // Core
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r * (isDrag ? 1.35 : 1), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(64,64,192,${fo})`;
+          ctx.fill();
+
+          // Highlight
+          ctx.beginPath();
+          ctx.arc(p.x - r * 0.28, p.y - r * 0.28, r * 0.32, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(180,180,255,${fo * 0.55})`;
+          ctx.fill();
+
           // Ripple
-          if (p.rippleActive && p.rippleOpacity > 0) {
-            ctx.strokeStyle = `rgba(64,64,192,${p.rippleOpacity * 0.6 * eo})`;
-            ctx.lineWidth = 0.8;
+          if (p.rippleActive) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.rippleRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(64,64,192,${p.rippleOpacity * eo})`;
+            ctx.lineWidth = 1;
             ctx.stroke();
           }
-
-          // Core circle
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-          const pulseAmp = 0.4 + Math.sin(p.breathPhase) * 0.3;
-          ctx.fillStyle = `rgba(64,64,192,${fo * (isHov ? 0.95 : isDrag ? 1 : pulseAmp)})`;
-          ctx.fill();
 
           // Micro-label
           if (eo > 0.6 && !isHov && !isDrag) {
@@ -463,12 +425,13 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       }
 
       animRef.current = requestAnimationFrame(tick);
-    };
+    }
 
     animRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animRef.current);
-  }, [initParticles]);
+  }, []);
 
+  // ── Pointer helpers ────────────────────────────────────────────────────────
   const getCanvasPos = useCallback(
     (clientX: number, clientY: number) => {
       const canvas = canvasRef.current;
@@ -489,6 +452,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
     return null;
   }, []);
 
+  // ── Mouse events ───────────────────────────────────────────────────────────
   const handleMouseDown = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
@@ -497,8 +461,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         draggedRef.current = found;
         dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
         hoveredRef.current = found;
-        tooltipRef.current = { x: found.x, y: found.y, label: found.node!.label, visible: true };
-        setTooltip(tooltipRef.current);
+        setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
         (e.target as HTMLCanvasElement).style.cursor = "grabbing";
         e.preventDefault();
       }
@@ -516,11 +479,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         const p = draggedRef.current;
         p.x = x + dragOffsetRef.current.dx;
         p.y = y + dragOffsetRef.current.dy;
-        tooltipRef.current = { x: p.x, y: p.y, label: p.node!.label, visible: true };
-        // Only update state every 3 frames to reduce re-renders
-        if (frameRef.current % 3 === 0) {
-          setTooltip(tooltipRef.current);
-        }
+        setTooltip({ x: p.x, y: p.y, label: p.node!.label, visible: true });
         return;
       }
 
@@ -531,12 +490,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           found.rippleRadius = found.radius * 1.1;
           found.rippleOpacity = 0.6;
           found.rippleActive = true;
-          tooltipRef.current = { x: found.x, y: found.y, label: found.node!.label, visible: true };
-          setTooltip(tooltipRef.current);
+          setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
           canvas.style.cursor = "grab";
         } else {
-          tooltipRef.current = { ...tooltipRef.current, visible: false };
-          setTooltip(tooltipRef.current);
+          setTooltip((t) => ({ ...t, visible: false }));
           canvas.style.cursor = "default";
         }
       }
@@ -544,10 +501,42 @@ export default function SignalField({ nodes }: SignalFieldProps) {
     [getCanvasPos, findNamedAt]
   );
 
-  const handleMouseUp = useCallback(() => {
-    draggedRef.current = null;
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const { x, y } = getCanvasPos(e.clientX, e.clientY);
+      const wasDragged = draggedRef.current;
+
+      if (wasDragged) {
+        // Check if it was a click (minimal movement)
+        const dx = wasDragged.x - (wasDragged.tx + wasDragged.dispX);
+        const dy = wasDragged.y - (wasDragged.ty + wasDragged.dispY);
+        const moved = Math.sqrt(dx * dx + dy * dy);
+
+        // Release: let spring physics pull it back
+        draggedRef.current = null;
+        canvas.style.cursor = "default";
+
+        if (moved < 8) {
+          // Treat as click — navigate
+          window.location.href = wasDragged.node!.url;
+        }
+        setTooltip((t) => ({ ...t, visible: false }));
+      }
+    },
+    [getCanvasPos]
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    if (draggedRef.current) {
+      draggedRef.current = null;
+    }
+    hoveredRef.current = null;
+    setTooltip((t) => ({ ...t, visible: false }));
   }, []);
 
+  // ── Touch events ───────────────────────────────────────────────────────────
   const handleTouchStart = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
       const touch = e.touches[0];
@@ -558,9 +547,8 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         draggedRef.current = found;
         dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
         hoveredRef.current = found;
-        tooltipRef.current = { x: found.x, y: found.y, label: found.node!.label, visible: true };
-        setTooltip(tooltipRef.current);
-        e.preventDefault();
+        setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
+        e.preventDefault(); // prevent scroll while dragging node
       }
     },
     [getCanvasPos, findNamedAt]
@@ -568,79 +556,78 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
   const handleTouchMove = useCallback(
     (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if (!draggedRef.current) return;
       const touch = e.touches[0];
-      if (!touch || !draggedRef.current) return;
+      if (!touch) return;
       const { x, y } = getCanvasPos(touch.clientX, touch.clientY);
       const p = draggedRef.current;
       p.x = x + dragOffsetRef.current.dx;
       p.y = y + dragOffsetRef.current.dy;
-      tooltipRef.current = { x: p.x, y: p.y, label: p.node!.label, visible: true };
-      if (frameRef.current % 3 === 0) {
-        setTooltip(tooltipRef.current);
-      }
+      setTooltip({ x: p.x, y: p.y, label: p.node!.label, visible: true });
       e.preventDefault();
     },
     [getCanvasPos]
   );
 
-  const handleTouchEnd = useCallback(() => {
-    draggedRef.current = null;
-  }, []);
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      const wasDragged = draggedRef.current;
+      if (!wasDragged) return;
+
+      const dx = wasDragged.x - (wasDragged.tx + wasDragged.dispX);
+      const dy = wasDragged.y - (wasDragged.ty + wasDragged.dispY);
+      const moved = Math.sqrt(dx * dx + dy * dy);
+
+      draggedRef.current = null;
+      hoveredRef.current = null;
+      setTooltip((t) => ({ ...t, visible: false }));
+
+      if (moved < 10) {
+        window.location.href = wasDragged.node!.url;
+      }
+    },
+    []
+  );
 
   return (
     <div
       ref={containerRef}
-      style={{
-        width: "100%",
-        height: "100%",
-        position: "relative",
-        overflow: "hidden",
-      }}
+      style={{ position: "relative", width: "100%", height: "100%" }}
     >
       <canvas
         ref={canvasRef}
+        style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
-        style={{
-          display: "block",
-          width: "100%",
-          height: "100%",
-          cursor: "default",
-        }}
       />
-      {tooltip.visible && (
-        <div
-          style={{
-            position: "absolute",
-            left: `${tooltip.x}px`,
-            top: `${tooltip.y}px`,
-            transform: "translate(-50%, -120%)",
-            pointerEvents: "none",
-            opacity: tooltip.visible ? 1 : 0,
-            transition: "opacity 0.2s",
-          }}
-        >
-          <div
-            style={{
-              background: "oklch(0.12 0.008 60)",
-              color: "oklch(0.98 0.008 85)",
-              padding: "4px 8px",
-              borderRadius: "3px",
-              fontSize: "11px",
-              fontFamily: "'Space Mono', monospace",
-              whiteSpace: "nowrap",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            }}
-          >
-            {tooltip.label}
-          </div>
-        </div>
-      )}
+
+      {/* Hover / drag tooltip */}
+      <div
+        style={{
+          position: "absolute",
+          left: tooltip.x,
+          top: tooltip.y - 34,
+          transform: "translateX(-50%)",
+          pointerEvents: "none",
+          fontFamily: "'Space Mono', monospace",
+          fontSize: "11px",
+          letterSpacing: "0.15em",
+          color: "oklch(0.42 0.22 270)",
+          opacity: tooltip.visible ? 1 : 0,
+          transition: "opacity 0.15s ease",
+          userSelect: "none",
+          whiteSpace: "nowrap",
+          textTransform: "uppercase",
+          fontWeight: 700,
+        }}
+      >
+        {tooltip.label}
+      </div>
     </div>
   );
 }
