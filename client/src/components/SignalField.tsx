@@ -258,13 +258,14 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             if (q === p || !q.entranceDone) continue;
             const dx = q.tx + q.dispX - p.x;
             const dy = q.ty + q.dispY - p.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < REPEL_RADIUS && dist > 0) {
-              const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
-              // Push q away from dragged node
-              q.velX -= (dx / dist) * force;
-              q.velY -= (dy / dist) * force;
-            }
+            const distSq = dx * dx + dy * dy;
+            // Early distance check: avoid sqrt if too far
+            if (distSq > REPEL_RADIUS * REPEL_RADIUS || distSq === 0) continue;
+            const dist = Math.sqrt(distSq);
+            const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
+            // Push q away from dragged node
+            q.velX -= (dx / dist) * force;
+            q.velY -= (dy / dist) * force;
           }
         } else if (!p.isNamed) {
           // Spring back toward anchor + drift
@@ -321,8 +322,11 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           if (entryOp(b) < 0.1) continue;
           const dx = a.x - b.x;
           const dy = a.y - b.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist >= MAX_DIST) continue;
+          const distSq = dx * dx + dy * dy;
+          // Early distance check: avoid sqrt if too far
+          const maxDistSq = MAX_DIST * MAX_DIST;
+          if (distSq >= maxDistSq) continue;
+          const dist = Math.sqrt(distSq);
 
           const distAlpha = (1 - dist / MAX_DIST) * 0.30;
           const eo = Math.min(entryOp(a), entryOp(b));
