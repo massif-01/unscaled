@@ -62,12 +62,15 @@ export interface SignalFieldProps {
 
 const BG_COUNT = 100;
 const MAX_DIST = 140;
+const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
 const NAMED_R = 5.0;
+const HIT_RADIUS_SQ = (NAMED_R * 6) * (NAMED_R * 6);
 const BG_R_MIN = 0.9;
 const BG_R_MAX = 2.4;
 
 // Repulsion physics constants
 const REPEL_RADIUS = 120;   // px — how far the drag repels particles
+const REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS;
 const REPEL_STRENGTH = 0.9; // force multiplier
 const SPRING_K = 0.055;     // spring stiffness for return
 const DAMPING = 0.78;       // velocity damping (0–1)
@@ -101,13 +104,54 @@ export default function SignalField({ nodes }: SignalFieldProps) {
   const sizeRef = useRef({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const tooltipPosRef = useRef({ x: 0, y: 0 });
+  const tooltipFrameRef = useRef<number | null>(null);
 
   const [tooltip, setTooltip] = useState<{
-    x: number;
-    y: number;
     label: string;
     visible: boolean;
-  }>({ x: 0, y: 0, label: "", visible: false });
+  }>({ label: "", visible: false });
+
+  const updateTooltipPosition = useCallback((x: number, y: number) => {
+    tooltipPosRef.current = { x, y };
+    if (tooltipFrameRef.current !== null) return;
+
+    tooltipFrameRef.current = requestAnimationFrame(() => {
+      tooltipFrameRef.current = null;
+      const el = tooltipRef.current;
+      if (!el) return;
+      const pos = tooltipPosRef.current;
+      el.style.transform = `translate3d(${pos.x}px, ${pos.y - 34}px, 0) translateX(-50%)`;
+    });
+  }, []);
+
+  const showTooltip = useCallback(
+    (p: Particle) => {
+      updateTooltipPosition(p.x, p.y);
+      const label = p.node!.label;
+      setTooltip((current) =>
+        current.visible && current.label === label
+          ? current
+          : { label, visible: true }
+      );
+    },
+    [updateTooltipPosition]
+  );
+
+  const hideTooltip = useCallback(() => {
+    setTooltip((current) =>
+      current.visible ? { ...current, visible: false } : current
+    );
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (tooltipFrameRef.current !== null) {
+        cancelAnimationFrame(tooltipFrameRef.current);
+      }
+    };
+  }, []);
 
   const initParticles = useCallback(
     (w: number, h: number) => {
@@ -196,6 +240,10 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       for (const e of entries) {
         const { width, height } = e.contentRect;
         if (width > 0 && height > 0) {
+          const size = sizeRef.current;
+          if (Math.abs(size.w - width) < 0.5 && Math.abs(size.h - height) < 0.5) {
+            continue;
+          }
           sizeRef.current = { w: width, h: height };
           initParticles(width, height);
           const canvas = canvasRef.current;
@@ -222,12 +270,23 @@ export default function SignalField({ nodes }: SignalFieldProps) {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+    let running = true;
+    let framePending = false;
+
+    const scheduleTick = () => {
+      if (!running || document.hidden || framePending) return;
+      framePending = true;
+      animRef.current = requestAnimationFrame(() => {
+        framePending = false;
+        tick();
+      });
+    };
 
     function tick() {
       if (!ctx) return;
       const { w, h } = sizeRef.current;
       if (w === 0) {
-        animRef.current = requestAnimationFrame(tick);
+        scheduleTick();
         return;
       }
 
@@ -260,7 +319,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
             const dy = q.ty + q.dispY - p.y;
             const distSq = dx * dx + dy * dy;
             // Early distance check: avoid sqrt if too far
-            if (distSq > REPEL_RADIUS * REPEL_RADIUS || distSq === 0) continue;
+            if (distSq > REPEL_RADIUS_SQ || distSq === 0) continue;
             const dist = Math.sqrt(distSq);
             const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
             // Push q away from dragged node
@@ -307,29 +366,32 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         }
       }
 
-      // Entry opacity helper
-      const entryOp = (p: Particle) => {
-        if (p.entranceDone) return 1;
-        return easeOutExpo(Math.max(0, p.entranceT - 0.15) / 0.85);
-      };
+      const entryOps = new Array<number>(ps.length);
+      for (let i = 0; i < ps.length; i++) {
+        const p = ps[i];
+        entryOps[i] = p.entranceDone
+          ? 1
+          : easeOutExpo(Math.max(0, p.entranceT - 0.15) / 0.85);
+      }
 
       // ── Draw lines ──────────────────────────────────────────────────────
       for (let i = 0; i < ps.length; i++) {
         const a = ps[i];
-        if (entryOp(a) < 0.1) continue;
+        const aEntryOp = entryOps[i];
+        if (aEntryOp < 0.1) continue;
         for (let j = i + 1; j < ps.length; j++) {
           const b = ps[j];
-          if (entryOp(b) < 0.1) continue;
+          const bEntryOp = entryOps[j];
+          if (bEntryOp < 0.1) continue;
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const distSq = dx * dx + dy * dy;
           // Early distance check: avoid sqrt if too far
-          const maxDistSq = MAX_DIST * MAX_DIST;
-          if (distSq >= maxDistSq) continue;
+          if (distSq >= MAX_DIST_SQ) continue;
           const dist = Math.sqrt(distSq);
 
           const distAlpha = (1 - dist / MAX_DIST) * 0.30;
-          const eo = Math.min(entryOp(a), entryOp(b));
+          const eo = Math.min(aEntryOp, bEntryOp);
 
           const isHovLine =
             (a === hoveredRef.current || b === hoveredRef.current) &&
@@ -360,8 +422,9 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       }
 
       // ── Draw particles ──────────────────────────────────────────────────
-      for (const p of ps) {
-        const eo = entryOp(p);
+      for (let i = 0; i < ps.length; i++) {
+        const p = ps[i];
+        const eo = entryOps[i];
         if (eo < 0.02) continue;
 
         const breathScale = 1 + Math.sin(p.breathPhase) * p.breathAmp;
@@ -421,11 +484,26 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         }
       }
 
-      animRef.current = requestAnimationFrame(tick);
+      scheduleTick();
     }
 
-    animRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animRef.current);
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(animRef.current);
+        framePending = false;
+      } else {
+        scheduleTick();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    scheduleTick();
+    return () => {
+      running = false;
+      cancelAnimationFrame(animRef.current);
+      framePending = false;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   // ── Pointer helpers ────────────────────────────────────────────────────────
@@ -444,30 +522,44 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       if (!p.isNamed) continue;
       const dx = p.x - cx;
       const dy = p.y - cy;
-      if (Math.sqrt(dx * dx + dy * dy) < NAMED_R * 6) return p;
+      if (dx * dx + dy * dy < HIT_RADIUS_SQ) return p;
     }
     return null;
   }, []);
 
-  // ── Mouse events ───────────────────────────────────────────────────────────
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const releasePointerCapture = useCallback((canvas: HTMLCanvasElement, pointerId: number) => {
+    try {
+      if (canvas.hasPointerCapture(pointerId)) {
+        canvas.releasePointerCapture(pointerId);
+      }
+    } catch {
+      // Pointer capture can already be gone after cancellation or navigation.
+    }
+  }, []);
+
+  // ── Pointer events ─────────────────────────────────────────────────────────
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!e.isPrimary) return;
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
       const found = findNamedAt(x, y);
       if (found) {
+        const canvas = e.currentTarget;
         draggedRef.current = found;
         dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
         hoveredRef.current = found;
-        setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
-        (e.target as HTMLCanvasElement).style.cursor = "grabbing";
+        canvas.setPointerCapture(e.pointerId);
+        showTooltip(found);
+        canvas.style.cursor = "grabbing";
         e.preventDefault();
       }
     },
-    [getCanvasPos, findNamedAt]
+    [getCanvasPos, findNamedAt, showTooltip]
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!e.isPrimary) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
@@ -476,7 +568,8 @@ export default function SignalField({ nodes }: SignalFieldProps) {
         const p = draggedRef.current;
         p.x = x + dragOffsetRef.current.dx;
         p.y = y + dragOffsetRef.current.dy;
-        setTooltip({ x: p.x, y: p.y, label: p.node!.label, visible: true });
+        updateTooltipPosition(p.x, p.y);
+        e.preventDefault();
         return;
       }
 
@@ -487,22 +580,22 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           found.rippleRadius = found.radius * 1.1;
           found.rippleOpacity = 0.6;
           found.rippleActive = true;
-          setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
+          showTooltip(found);
           canvas.style.cursor = "grab";
         } else {
-          setTooltip((t) => ({ ...t, visible: false }));
+          hideTooltip();
           canvas.style.cursor = "default";
         }
       }
     },
-    [getCanvasPos, findNamedAt]
+    [getCanvasPos, findNamedAt, hideTooltip, showTooltip, updateTooltipPosition]
   );
 
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!e.isPrimary) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
-      const { x, y } = getCanvasPos(e.clientX, e.clientY);
       const wasDragged = draggedRef.current;
 
       if (wasDragged) {
@@ -513,77 +606,40 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
         // Release: let spring physics pull it back
         draggedRef.current = null;
+        releasePointerCapture(canvas, e.pointerId);
         canvas.style.cursor = "default";
 
-        if (moved < 8) {
+        if (moved < (e.pointerType === "touch" ? 10 : 8)) {
           // Treat as click — navigate
           window.location.href = wasDragged.node!.url;
         }
-        setTooltip((t) => ({ ...t, visible: false }));
+        hideTooltip();
       }
     },
-    [getCanvasPos]
+    [hideTooltip, releasePointerCapture]
   );
 
-  const handleMouseLeave = useCallback(() => {
+  const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = e.currentTarget;
     if (draggedRef.current) {
       draggedRef.current = null;
+      releasePointerCapture(canvas, e.pointerId);
     }
     hoveredRef.current = null;
-    setTooltip((t) => ({ ...t, visible: false }));
-  }, []);
+    hideTooltip();
+    canvas.style.cursor = "default";
+  }, [hideTooltip, releasePointerCapture]);
 
-  // ── Touch events ───────────────────────────────────────────────────────────
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent<HTMLCanvasElement>) => {
-      const touch = e.touches[0];
-      if (!touch) return;
-      const { x, y } = getCanvasPos(touch.clientX, touch.clientY);
-      const found = findNamedAt(x, y);
-      if (found) {
-        draggedRef.current = found;
-        dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
-        hoveredRef.current = found;
-        setTooltip({ x: found.x, y: found.y, label: found.node!.label, visible: true });
-        e.preventDefault(); // prevent scroll while dragging node
-      }
-    },
-    [getCanvasPos, findNamedAt]
-  );
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent<HTMLCanvasElement>) => {
-      if (!draggedRef.current) return;
-      const touch = e.touches[0];
-      if (!touch) return;
-      const { x, y } = getCanvasPos(touch.clientX, touch.clientY);
-      const p = draggedRef.current;
-      p.x = x + dragOffsetRef.current.dx;
-      p.y = y + dragOffsetRef.current.dy;
-      setTooltip({ x: p.x, y: p.y, label: p.node!.label, visible: true });
-      e.preventDefault();
-    },
-    [getCanvasPos]
-  );
-
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent<HTMLCanvasElement>) => {
-      const wasDragged = draggedRef.current;
-      if (!wasDragged) return;
-
-      const dx = wasDragged.x - (wasDragged.tx + wasDragged.dispX);
-      const dy = wasDragged.y - (wasDragged.ty + wasDragged.dispY);
-      const moved = Math.sqrt(dx * dx + dy * dy);
-
+  const handlePointerCancel = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const canvas = e.currentTarget;
       draggedRef.current = null;
       hoveredRef.current = null;
-      setTooltip((t) => ({ ...t, visible: false }));
-
-      if (moved < 10) {
-        window.location.href = wasDragged.node!.url;
-      }
+      releasePointerCapture(canvas, e.pointerId);
+      canvas.style.cursor = "default";
+      hideTooltip();
     },
-    []
+    [hideTooltip, releasePointerCapture]
   );
 
   return (
@@ -594,22 +650,21 @@ export default function SignalField({ nodes }: SignalFieldProps) {
       <canvas
         ref={canvasRef}
         style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerCancel}
       />
 
       {/* Hover / drag tooltip */}
       <div
+        ref={tooltipRef}
         style={{
           position: "absolute",
-          left: tooltip.x,
-          top: tooltip.y - 34,
-          transform: "translateX(-50%)",
+          left: 0,
+          top: 0,
+          transform: `translate3d(${tooltipPosRef.current.x}px, ${tooltipPosRef.current.y - 34}px, 0) translateX(-50%)`,
           pointerEvents: "none",
           fontFamily: "'Space Mono', monospace",
           fontSize: "11px",
@@ -621,6 +676,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
           whiteSpace: "nowrap",
           textTransform: "uppercase",
           fontWeight: 700,
+          willChange: "transform, opacity",
         }}
       >
         {tooltip.label}

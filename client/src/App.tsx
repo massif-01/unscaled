@@ -1,25 +1,27 @@
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-import Admin from "./pages/Admin";
-import AiPage from "./pages/AiPage";
-import InfoPage from "./pages/InfoPage";
+
+const Admin = lazy(() => import("./pages/Admin"));
+const AiPage = lazy(() => import("./pages/AiPage"));
+const InfoPage = lazy(() => import("./pages/InfoPage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/admin"} component={Admin} />
-      <Route path={"/ai"} component={AiPage} />
-      <Route path={"/info"} component={InfoPage} />
-      <Route path={"/404"} component={NotFound} />
-      <Route component={NotFound} />
-    </Switch>
+    <Suspense fallback={null}>
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/admin"} component={Admin} />
+        <Route path={"/ai"} component={AiPage} />
+        <Route path={"/info"} component={InfoPage} />
+        <Route path={"/404"} component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 
@@ -27,10 +29,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <Router />
       </ThemeProvider>
     </ErrorBoundary>
   );
