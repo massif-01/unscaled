@@ -20,6 +20,12 @@ const aiItems: AIItem[] = [
     url: "https://qwen.unscaled.me",
     category: "Benchmark",
   },
+  {
+    title: "Daily Stock Analysis",
+    description: "LLM-powered intelligent stock analyzer for A/H/US markets. Automated decision dashboards with multi-dimensional analysis: technical patterns, real-time quotes, fund flows, news sentiment, and AI-driven insights. Supports 11 built-in strategies, backtesting, and multi-channel notifications via WeChat, Feishu, Telegram, Discord, Slack, and email. Zero-cost execution on GitHub Actions or Docker.",
+    url: "https://github.com/ZhuLinsen/daily_stock_analysis",
+    category: "Quant",
+  },
 ];
 
 export default function AiPage() {
