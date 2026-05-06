@@ -116,7 +116,7 @@ export default function AuraCapArticle() {
           </p>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            It is the first open-source project to use GitHub Release as a transient middleware—a radical rethinking of how we move data through systems without paying for infrastructure. iOS Shortcuts capture screenshots or recordings and upload them to Release Assets. GitHub Actions automatically retrieves, processes via AI, and writes structured insights to a timeline. The entire loop closes within GitHub's security boundary. No S3. No image hosting. No exposed webhooks. No server bills.
+            It is the first open-source project to use GitHub Release as a transient middleware—a radical rethinking of how we move data through systems without paying for infrastructure. iOS Shortcuts capture screenshots or recordings and upload them to Release Assets. GitHub Actions automatically retrieves, processes via AI, and writes structured insights to a timeline. The entire loop closes within GitHub's security boundary. No S3. No image hosting. No exposed webhooks. No server bills. Fork the repository, configure your AI model secrets, and deployment is complete. Zero infrastructure cost. Zero operational overhead.
           </p>
 
           <h2
