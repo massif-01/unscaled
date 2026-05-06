@@ -11,8 +11,8 @@ export default function PodcastPage() {
     document.title = "Podcast — Unscaled";
   }, []);
 
-  // Current podcast link (replace with actual URL when available)
-  const podcastUrl = "https://podcast.unscaled.me";
+  // Current podcast link
+  const podcastUrl = "https://unscaled.podcast.xyz";
 
   return (
     <div
