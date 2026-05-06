@@ -54,7 +54,7 @@ export default function AuraCapArticle() {
       {/* Article content */}
       <div
         style={{
-          maxWidth: "65ch",
+          width: "100%",
           marginTop: "clamp(2rem, 4vw, 3rem)",
         }}
       >
