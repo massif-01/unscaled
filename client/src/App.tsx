@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 
 const AdminRoute = lazy(() => import("./pages/AdminRoute"));
 const AiPage = lazy(() => import("./pages/AiPage"));
+const DailyStockAnalysisArticle = lazy(() => import("./pages/DailyStockAnalysisArticle"));
 const InfoPage = lazy(() => import("./pages/InfoPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -16,6 +17,7 @@ function Router() {
       <Switch>
         <Route path={"/"} component={Home} />
         <Route path={"/admin"} component={AdminRoute} />
+        <Route path={"/ai/daily-stock-analysis"} component={DailyStockAnalysisArticle} />
         <Route path={"/ai"} component={AiPage} />
         <Route path={"/info"} component={InfoPage} />
         <Route path={"/404"} component={NotFound} />

@@ -23,7 +23,7 @@ const aiItems: AIItem[] = [
   {
     title: "Daily Stock Analysis",
     description: "LLM-powered intelligent stock analyzer for A/H/US markets. Automated decision dashboards with multi-dimensional analysis: technical patterns, real-time quotes, fund flows, news sentiment, and AI-driven insights. Supports 11 built-in strategies, backtesting, and multi-channel notifications via WeChat, Feishu, Telegram, Discord, Slack, and email. Zero-cost execution on GitHub Actions or Docker.",
-    url: "https://github.com/ZhuLinsen/daily_stock_analysis",
+    url: "/ai/daily-stock-analysis",
     category: "Quant",
   },
 ];
@@ -166,6 +166,12 @@ export default function AiPage() {
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLElement).style.opacity = "0.9";
               (e.currentTarget as HTMLElement).style.transform = "translateX(0)";
+            }}
+            onClick={(e) => {
+              if (item.url.startsWith("/")) {
+                e.preventDefault();
+                window.location.href = item.url;
+              }
             }}
           >
             {/* Category badge */}
