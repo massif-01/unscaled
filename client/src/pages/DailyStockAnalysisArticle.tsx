@@ -207,26 +207,31 @@ export default function DailyStockAnalysisArticle() {
             style={{
               display: "inline-block",
               fontFamily: "'Space Mono', monospace",
-              fontSize: "clamp(0.9rem, 1.4vw, 1rem)",
-              letterSpacing: "0.15em",
-              color: "oklch(0.98 0.008 85)",
-              backgroundColor: "oklch(0.12 0.008 60)",
+              fontSize: "clamp(0.75rem, 1rem, 0.9rem)",
+              letterSpacing: "0.12em",
+              color: "oklch(0.12 0.008 60)",
+              backgroundColor: "transparent",
               textTransform: "uppercase",
-              padding: "clamp(1rem, 2vw, 1.5rem) clamp(1.8rem, 3vw, 2.5rem)",
+              padding: "0.5rem 0",
               border: "none",
+              borderBottom: "1px solid oklch(0.12 0.008 60)",
               cursor: "pointer",
               textDecoration: "none",
               transition: "all 0.3s ease",
               marginTop: "clamp(1rem, 2vw, 1.5rem)",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor =
-                "oklch(0.25 0.010 60)";
-              (e.currentTarget as HTMLElement).style.transform = "translateX(4px)";
-            }}
-            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color =
+                "oklch(0.98 0.008 85)";
               (e.currentTarget as HTMLElement).style.backgroundColor =
                 "oklch(0.12 0.008 60)";
+              (e.currentTarget as HTMLElement).style.transform = "translateX(2px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.color =
+                "oklch(0.12 0.008 60)";
+              (e.currentTarget as HTMLElement).style.backgroundColor =
+                "transparent";
               (e.currentTarget as HTMLElement).style.transform = "translateX(0)";
             }}
           >
