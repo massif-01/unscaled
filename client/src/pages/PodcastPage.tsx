@@ -18,14 +18,15 @@ export default function PodcastPage() {
     <div
       style={{
         width: "100vw",
-        height: "100dvh",
+        minHeight: "100dvh",
         background: "oklch(0.98 0.008 85)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: "flex-start",
         paddingLeft: "clamp(2.2rem, 8vw, 7rem)",
         paddingRight: "clamp(2.2rem, 8vw, 7rem)",
+        paddingTop: "clamp(8rem, 15vw, 12rem)",
         overflow: "auto",
         position: "relative",
         userSelect: "none",
@@ -56,9 +57,10 @@ export default function PodcastPage() {
       {/* Content container */}
       <div
         style={{
-          maxWidth: "70ch",
+          width: "75%",
+          maxWidth: "900px",
           textAlign: "center",
-          marginBottom: "clamp(3rem, 6vw, 5rem)",
+          marginBottom: "clamp(4rem, 8vw, 6rem)",
         }}
       >
         {/* Title */}
@@ -66,11 +68,11 @@ export default function PodcastPage() {
           style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontWeight: 700,
-            fontSize: "clamp(2.5rem, 6vw, 5rem)",
-            lineHeight: 1,
+            fontSize: "clamp(3rem, 7vw, 6.5rem)",
+            lineHeight: 0.92,
             letterSpacing: "0.04em",
             color: "oklch(0.12 0.008 60)",
-            margin: "0 0 clamp(2rem, 4vw, 3rem) 0",
+            margin: "0 0 clamp(1.5rem, 3vw, 2.5rem) 0",
             padding: 0,
           }}
         >
@@ -83,7 +85,7 @@ export default function PodcastPage() {
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontStyle: "italic",
             fontWeight: 300,
-            fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
+            fontSize: "clamp(1.2rem, 2.2vw, 1.6rem)",
             letterSpacing: "0.015em",
             color: "oklch(0.50 0.010 65)",
             lineHeight: 1.7,
@@ -103,64 +105,31 @@ export default function PodcastPage() {
           }}
         />
 
-        {/* Chinese content */}
-        <div
-          style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: "clamp(0.95rem, 1.6vw, 1.1rem)",
-            lineHeight: 1.8,
-            color: "oklch(0.35 0.008 60)",
-            letterSpacing: "0.01em",
-            marginBottom: "clamp(2.5rem, 5vw, 4rem)",
-            textAlign: "left",
-          }}
-        >
-          <p style={{ marginBottom: "1.5rem" }}>
-            <strong>《刻度之外 | Unscaled》</strong>
-          </p>
-
-          <p style={{ marginBottom: "1.5rem" }}>
-            <strong>核心立场：观测者的自由</strong>
-          </p>
-
-          <p style={{ marginBottom: "1.5rem" }}>
-            在目前的 AI 语境下，所有人都在谈论规模、参数、算力堆砌。作为一名AI推理硬件公司的联创，如果只谈论"刻度之内"的跑分、制程与吞吐量，那更像是一个推销员的自白。
-          </p>
-
-          <p style={{ marginBottom: "1.5rem" }}>
-            "刻度之外"代表的是一种观测者的自由，在芯片领域，Scale 是工艺制程；在艺术领域，Scale 是比例。因为深知硬件的极限（Scale），所以更有资格谈论跳出硬件与技术之后的产品灵魂、艺术张力与变局。
-          </p>
-
-          <p style={{ marginBottom: "clamp(2.5rem, 5vw, 4rem)" }}>
-            "刻度之外"拒绝被定义，既有底层硬件的坚硬，又有观测者视角的轻盈。
-          </p>
-        </div>
-
         {/* English content */}
         <div
           style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: "clamp(0.95rem, 1.6vw, 1.1rem)",
-            lineHeight: 1.8,
+            fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
+            lineHeight: 1.85,
             color: "oklch(0.35 0.008 60)",
             letterSpacing: "0.01em",
-            marginBottom: "clamp(3rem, 6vw, 5rem)",
+            marginBottom: "clamp(3.5rem, 7vw, 5.5rem)",
             textAlign: "left",
           }}
         >
-          <p style={{ marginBottom: "1.5rem" }}>
+          <p style={{ marginBottom: "1.8rem" }}>
             <strong>Core Stance: The Observer's Freedom</strong>
           </p>
 
-          <p style={{ marginBottom: "1.5rem" }}>
+          <p style={{ marginBottom: "1.8rem" }}>
             In today's AI discourse, everyone speaks of scale, parameters, and computational abundance. As a co-founder of an AI inference hardware company, if I only discussed benchmarks, process nodes, and throughput—the metrics "within the scale"—I would sound like a salesman reading from a script.
           </p>
 
-          <p style={{ marginBottom: "1.5rem" }}>
+          <p style={{ marginBottom: "1.8rem" }}>
             "Unscaled" represents the freedom of an observer. In semiconductors, scale is process technology; in art, scale is proportion. Because we understand hardware's limits intimately, we earn the right to speak of what lies beyond—the soul of a product, the tension of creation, and the shifts in paradigm that transcend mere technical specifications.
           </p>
 
-          <p style={{ marginBottom: "clamp(3rem, 6vw, 5rem)" }}>
+          <p style={{ marginBottom: "clamp(3.5rem, 7vw, 5.5rem)" }}>
             "Unscaled" refuses to be confined. It carries the hardness of foundational hardware and the lightness of the observer's perspective.
           </p>
         </div>
