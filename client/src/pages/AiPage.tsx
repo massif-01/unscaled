@@ -26,6 +26,18 @@ const aiItems: AIItem[] = [
     url: "/ai/daily-stock-analysis",
     category: "Quant",
   },
+  {
+    title: "AuraCap",
+    description: "Turn every screenshot and recording into traceable, reusable long-term assets. GitHub Release as transient middleware: iOS Shortcuts upload media, GitHub Actions processes via AI, outputs structured Markdown. Zero-cost deployment, no S3, no webhooks, full data control.",
+    url: "/ai/auracap",
+    category: "Knowledge",
+  },
+  {
+    title: "ChatRaw",
+    description: "Ultra-minimal AI chat UI: 30-second Docker deployment, zero registration, OpenAI-compatible. Supports any model (Ollama, vLLM, LocalAI, LM Studio). Multi-model configuration, document parsing, vision AI, thinking mode, plugin ecosystem. Lightweight (60MB), responsive design, perfect Lighthouse scores.",
+    url: "/ai/chatraw",
+    category: "Interface",
+  },
 ];
 
 export default function AiPage() {
