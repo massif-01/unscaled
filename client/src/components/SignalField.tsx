@@ -19,6 +19,13 @@ export interface NavNode {
   ny?: number;
 }
 
+type NamedAnchor = {
+  nx: number;
+  ny: number;
+};
+
+type PositionMode = "configured" | "session-random";
+
 interface Particle {
   x: number;
   y: number;
@@ -58,6 +65,7 @@ interface Particle {
 
 export interface SignalFieldProps {
   nodes: NavNode[];
+  positionMode?: PositionMode;
 }
 
 const BG_COUNT = 100;
@@ -67,6 +75,13 @@ const NAMED_R = 5.0;
 const HIT_RADIUS_SQ = (NAMED_R * 6) * (NAMED_R * 6);
 const BG_R_MIN = 0.9;
 const BG_R_MAX = 2.4;
+const MIN_RANDOM_ANCHOR_SIZE = 240;
+const RANDOM_NX_MIN = 0.28;
+const RANDOM_NX_MAX = 0.86;
+const RANDOM_NY_MIN = 0.22;
+const RANDOM_NY_MAX = 0.78;
+const RANDOM_ATTEMPTS_PER_POINT = 120;
+const RANDOM_MIN_DIST_FLOOR = 56;
 
 // Repulsion physics constants
 const REPEL_RADIUS = 120;   // px — how far the drag repels particles
@@ -94,9 +109,63 @@ const NAMED_POSITIONS = [
   { nx: 0.72, ny: 0.72 },
 ];
 
-export default function SignalField({ nodes }: SignalFieldProps) {
+function getShuffledNamedPositions(count: number): NamedAnchor[] {
+  const pool = [...NAMED_POSITIONS];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand(0, i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  return Array.from({ length: count }, (_, i) => pool[i % pool.length]);
+}
+
+function generateNamedAnchors(count: number, w: number, h: number): NamedAnchor[] {
+  if (count <= 0) return [];
+
+  const anchors: NamedAnchor[] = [];
+  const initialMinDist = Math.max(90, Math.min(150, Math.min(w, h) * 0.18));
+
+  for (let i = 0; i < count; i++) {
+    let minDist = initialMinDist;
+    let accepted = false;
+
+    while (minDist >= RANDOM_MIN_DIST_FLOOR && !accepted) {
+      for (let attempt = 0; attempt < RANDOM_ATTEMPTS_PER_POINT; attempt++) {
+        const candidate = {
+          nx: rand(RANDOM_NX_MIN, RANDOM_NX_MAX),
+          ny: rand(RANDOM_NY_MIN, RANDOM_NY_MAX),
+        };
+        const x = candidate.nx * w;
+        const y = candidate.ny * h;
+
+        const hasEnoughDistance = anchors.every((anchor) => {
+          const dx = anchor.nx * w - x;
+          const dy = anchor.ny * h - y;
+          return Math.sqrt(dx * dx + dy * dy) >= minDist;
+        });
+
+        if (hasEnoughDistance) {
+          anchors.push(candidate);
+          accepted = true;
+          break;
+        }
+      }
+
+      minDist *= 0.88;
+    }
+
+    if (!accepted) {
+      return getShuffledNamedPositions(count);
+    }
+  }
+
+  return anchors;
+}
+
+export default function SignalField({ nodes, positionMode = "configured" }: SignalFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
+  const namedAnchorsRef = useRef<NamedAnchor[] | null>(null);
   const animRef = useRef<number>(0);
   const hoveredRef = useRef<Particle | null>(null);
   const draggedRef = useRef<Particle | null>(null);
@@ -156,11 +225,29 @@ export default function SignalField({ nodes }: SignalFieldProps) {
   const initParticles = useCallback(
     (w: number, h: number) => {
       const list: Particle[] = [];
+      const canUseRandomAnchors =
+        positionMode === "session-random" &&
+        w >= MIN_RANDOM_ANCHOR_SIZE &&
+        h >= MIN_RANDOM_ANCHOR_SIZE;
+
+      if (
+        canUseRandomAnchors &&
+        (!namedAnchorsRef.current || namedAnchorsRef.current.length !== nodes.length)
+      ) {
+        namedAnchorsRef.current = generateNamedAnchors(nodes.length, w, h);
+      }
 
       nodes.forEach((node, i) => {
-        const pos = NAMED_POSITIONS[i % NAMED_POSITIONS.length];
-        const nx = node.nx ?? pos.nx;
-        const ny = node.ny ?? pos.ny;
+        const fallbackPos = NAMED_POSITIONS[i % NAMED_POSITIONS.length];
+        const randomPos = namedAnchorsRef.current?.[i] ?? fallbackPos;
+        const nx =
+          positionMode === "session-random"
+            ? randomPos.nx
+            : node.nx ?? fallbackPos.nx;
+        const ny =
+          positionMode === "session-random"
+            ? randomPos.ny
+            : node.ny ?? fallbackPos.ny;
         const tx = nx * w;
         const ty = ny * h;
         const sa = rand(0, Math.PI * 2);
@@ -229,7 +316,7 @@ export default function SignalField({ nodes }: SignalFieldProps) {
 
       particlesRef.current = list;
     },
-    [nodes]
+    [nodes, positionMode]
   );
 
   // Resize
