@@ -28,7 +28,7 @@ const aiItems: AIItem[] = [
   },
   {
     title: "AuraCap",
-    description: "Turn every screenshot and recording into traceable, reusable long-term assets. GitHub Release as transient middleware: iOS Shortcuts upload media, GitHub Actions processes via AI, outputs structured Markdown. Zero-cost deployment, no S3, no webhooks, full data control.",
+    description: "The first open-source project using GitHub Release as transient middleware. iOS Shortcuts capture screenshots/recordings → Release Assets → GitHub Actions AI processing → structured Markdown timeline. Zero infrastructure cost, zero webhooks, zero S3. Fork the repo, configure AI secrets, deploy instantly. Your data stays within GitHub's security boundary.",
     url: "/ai/auracap",
     category: "Knowledge",
   },
