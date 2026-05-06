@@ -9,6 +9,7 @@ const AiPage = lazy(() => import("./pages/AiPage"));
 const DailyStockAnalysisArticle = lazy(() => import("./pages/DailyStockAnalysisArticle"));
 const AuraCapArticle = lazy(() => import("./pages/AuraCapArticle"));
 const ChatRawArticle = lazy(() => import("./pages/ChatRawArticle"));
+const PodcastPage = lazy(() => import("./pages/PodcastPage"));
 const InfoPage = lazy(() => import("./pages/InfoPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -23,6 +24,7 @@ function Router() {
         <Route path={"/ai/auracap"} component={AuraCapArticle} />
         <Route path={"/ai/chatraw"} component={ChatRawArticle} />
         <Route path={"/ai"} component={AiPage} />
+        <Route path={"/podcast"} component={PodcastPage} />
         <Route path={"/info"} component={InfoPage} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
