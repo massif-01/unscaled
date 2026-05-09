@@ -4,8 +4,8 @@
  * Features:
  * - Canvas particle field with proximity triangulation lines
  * - Named nodes: pulse, permanent micro-labels, hover ripple
- * - Drag named nodes (mouse + touch): surrounding particles are repelled
- *   with spring-back physics when released
+ * - Drag from named nodes (mouse + touch): anchors stay fixed while
+ *   surrounding particles are repelled by the pointer
  * - ~25% background particles drift with slow sinusoidal breathing
  */
 
@@ -25,6 +25,13 @@ type NamedAnchor = {
 };
 
 type PositionMode = "configured" | "session-random";
+
+type DragSource = {
+  x: number;
+  y: number;
+  startX: number;
+  startY: number;
+};
 
 interface Particle {
   x: number;
@@ -72,7 +79,8 @@ const BG_COUNT = 100;
 const MAX_DIST = 140;
 const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
 const NAMED_R = 5.0;
-const HIT_RADIUS_SQ = (NAMED_R * 6) * (NAMED_R * 6);
+const HIT_RADIUS_SQ = NAMED_R * 6 * (NAMED_R * 6);
+const NAMED_LABEL_OFFSET = NAMED_R * 2.2 + 4;
 const BG_R_MIN = 0.9;
 const BG_R_MAX = 2.4;
 const MIN_RANDOM_ANCHOR_SIZE = 240;
@@ -84,11 +92,11 @@ const RANDOM_ATTEMPTS_PER_POINT = 120;
 const RANDOM_MIN_DIST_FLOOR = 56;
 
 // Repulsion physics constants
-const REPEL_RADIUS = 120;   // px — how far the drag repels particles
+const REPEL_RADIUS = 120; // px — how far the drag repels particles
 const REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS;
 const REPEL_STRENGTH = 0.9; // force multiplier
-const SPRING_K = 0.055;     // spring stiffness for return
-const DAMPING = 0.78;       // velocity damping (0–1)
+const SPRING_K = 0.055; // spring stiffness for return
+const DAMPING = 0.78; // velocity damping (0–1)
 
 function rand(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -103,9 +111,9 @@ const NAMED_POSITIONS = [
   { nx: 0.68, ny: 0.28 },
   { nx: 0.55, ny: 0.62 },
   { nx: 0.78, ny: 0.58 },
-  { nx: 0.35, ny: 0.70 },
+  { nx: 0.35, ny: 0.7 },
   { nx: 0.82, ny: 0.38 },
-  { nx: 0.60, ny: 0.80 },
+  { nx: 0.6, ny: 0.8 },
   { nx: 0.72, ny: 0.72 },
 ];
 
@@ -119,7 +127,11 @@ function getShuffledNamedPositions(count: number): NamedAnchor[] {
   return Array.from({ length: count }, (_, i) => pool[i % pool.length]);
 }
 
-function generateNamedAnchors(count: number, w: number, h: number): NamedAnchor[] {
+function generateNamedAnchors(
+  count: number,
+  w: number,
+  h: number
+): NamedAnchor[] {
   if (count <= 0) return [];
 
   const anchors: NamedAnchor[] = [];
@@ -138,7 +150,7 @@ function generateNamedAnchors(count: number, w: number, h: number): NamedAnchor[
         const x = candidate.nx * w;
         const y = candidate.ny * h;
 
-        const hasEnoughDistance = anchors.every((anchor) => {
+        const hasEnoughDistance = anchors.every(anchor => {
           const dx = anchor.nx * w - x;
           const dy = anchor.ny * h - y;
           return Math.sqrt(dx * dx + dy * dy) >= minDist;
@@ -162,14 +174,17 @@ function generateNamedAnchors(count: number, w: number, h: number): NamedAnchor[
   return anchors;
 }
 
-export default function SignalField({ nodes, positionMode = "configured" }: SignalFieldProps) {
+export default function SignalField({
+  nodes,
+  positionMode = "configured",
+}: SignalFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const namedAnchorsRef = useRef<NamedAnchor[] | null>(null);
   const animRef = useRef<number>(0);
   const hoveredRef = useRef<Particle | null>(null);
   const draggedRef = useRef<Particle | null>(null);
-  const dragOffsetRef = useRef({ dx: 0, dy: 0 });
+  const dragSourceRef = useRef<DragSource | null>(null);
   const sizeRef = useRef({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
@@ -197,9 +212,9 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
 
   const showTooltip = useCallback(
     (p: Particle) => {
-      updateTooltipPosition(p.x, p.y);
+      updateTooltipPosition(p.tx, p.ty);
       const label = p.node!.label;
-      setTooltip((current) =>
+      setTooltip(current =>
         current.visible && current.label === label
           ? current
           : { label, visible: true }
@@ -209,7 +224,7 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
   );
 
   const hideTooltip = useCallback(() => {
-    setTooltip((current) =>
+    setTooltip(current =>
       current.visible ? { ...current, visible: false } : current
     );
   }, []);
@@ -232,7 +247,8 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
 
       if (
         canUseRandomAnchors &&
-        (!namedAnchorsRef.current || namedAnchorsRef.current.length !== nodes.length)
+        (!namedAnchorsRef.current ||
+          namedAnchorsRef.current.length !== nodes.length)
       ) {
         namedAnchorsRef.current = generateNamedAnchors(nodes.length, w, h);
       }
@@ -243,39 +259,44 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
         const nx =
           positionMode === "session-random"
             ? randomPos.nx
-            : node.nx ?? fallbackPos.nx;
+            : (node.nx ?? fallbackPos.nx);
         const ny =
           positionMode === "session-random"
             ? randomPos.ny
-            : node.ny ?? fallbackPos.ny;
+            : (node.ny ?? fallbackPos.ny);
         const tx = nx * w;
         const ty = ny * h;
-        const sa = rand(0, Math.PI * 2);
-        const sd = rand(60, 180);
         list.push({
-          x: tx + Math.cos(sa) * sd,
-          y: ty + Math.sin(sa) * sd,
-          tx, ty,
-          dispX: 0, dispY: 0,
-          velX: 0, velY: 0,
-          vx: 0, vy: 0,
+          x: tx,
+          y: ty,
+          tx,
+          ty,
+          dispX: 0,
+          dispY: 0,
+          velX: 0,
+          velY: 0,
+          vx: 0,
+          vy: 0,
           radius: NAMED_R,
           opacity: 1,
           isNamed: true,
           node,
           breathPhase: rand(0, Math.PI * 2),
           breathSpeed: rand(0.005, 0.008),
-          breathAmp: 0.20,
+          breathAmp: 0.2,
           rippleRadius: 0,
           rippleOpacity: 0,
           rippleActive: false,
-          entranceT: 0,
-          entranceDelay: i * 6,
-          entranceDone: false,
+          entranceT: 1,
+          entranceDelay: 0,
+          entranceDone: true,
           drifting: false,
-          driftPhaseX: 0, driftPhaseY: 0,
-          driftSpeedX: 0, driftSpeedY: 0,
-          driftAmpX: 0, driftAmpY: 0,
+          driftPhaseX: 0,
+          driftPhaseY: 0,
+          driftSpeedX: 0,
+          driftSpeedY: 0,
+          driftAmpX: 0,
+          driftAmpY: 0,
         });
       });
 
@@ -288,12 +309,16 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
         list.push({
           x: tx + Math.cos(sa) * sd,
           y: ty + Math.sin(sa) * sd,
-          tx, ty,
-          dispX: 0, dispY: 0,
-          velX: 0, velY: 0,
-          vx: 0, vy: 0,
+          tx,
+          ty,
+          dispX: 0,
+          dispY: 0,
+          velX: 0,
+          velY: 0,
+          vx: 0,
+          vy: 0,
           radius: rand(BG_R_MIN, BG_R_MAX),
-          opacity: rand(0.10, 0.45),
+          opacity: rand(0.1, 0.45),
           isNamed: false,
           breathPhase: rand(0, Math.PI * 2),
           breathSpeed: rand(0.002, 0.007),
@@ -323,12 +348,15 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => {
+    const ro = new ResizeObserver(entries => {
       for (const e of entries) {
         const { width, height } = e.contentRect;
         if (width > 0 && height > 0) {
           const size = sizeRef.current;
-          if (Math.abs(size.w - width) < 0.5 && Math.abs(size.h - height) < 0.5) {
+          if (
+            Math.abs(size.w - width) < 0.5 &&
+            Math.abs(size.h - height) < 0.5
+          ) {
             continue;
           }
           sizeRef.current = { w: width, h: height };
@@ -383,6 +411,7 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
 
       const ps = particlesRef.current;
       const dragged = draggedRef.current;
+      const dragSource = dragSourceRef.current;
 
       // ── Update ──────────────────────────────────────────────────────────
       for (const p of ps) {
@@ -398,20 +427,23 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
             }
           }
         } else if (p === dragged) {
-          // Dragged named node — position set externally by pointer events
-          // Apply repulsion to all other particles
-          for (const q of ps) {
-            if (q === p || !q.entranceDone) continue;
-            const dx = q.tx + q.dispX - p.x;
-            const dy = q.ty + q.dispY - p.y;
-            const distSq = dx * dx + dy * dy;
-            // Early distance check: avoid sqrt if too far
-            if (distSq > REPEL_RADIUS_SQ || distSq === 0) continue;
-            const dist = Math.sqrt(distSq);
-            const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
-            // Push q away from dragged node
-            q.velX -= (dx / dist) * force;
-            q.velY -= (dy / dist) * force;
+          p.x = p.tx;
+          p.y = p.ty;
+          if (dragSource) {
+            // Pointer is the force source; named anchors remain immutable.
+            for (const q of ps) {
+              if (q === p || q.isNamed || !q.entranceDone) continue;
+              const dx = q.tx + q.dispX - dragSource.x;
+              const dy = q.ty + q.dispY - dragSource.y;
+              const distSq = dx * dx + dy * dy;
+              // Early distance check: avoid sqrt if too far
+              if (distSq > REPEL_RADIUS_SQ || distSq === 0) continue;
+              const dist = Math.sqrt(distSq);
+              const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
+              // Push q away from the pointer.
+              q.velX -= (dx / dist) * force;
+              q.velY -= (dy / dist) * force;
+            }
           }
         } else if (!p.isNamed) {
           // Spring back toward anchor + drift
@@ -477,14 +509,13 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
           if (distSq >= MAX_DIST_SQ) continue;
           const dist = Math.sqrt(distSq);
 
-          const distAlpha = (1 - dist / MAX_DIST) * 0.30;
+          const distAlpha = (1 - dist / MAX_DIST) * 0.3;
           const eo = Math.min(aEntryOp, bEntryOp);
 
           const isHovLine =
             (a === hoveredRef.current || b === hoveredRef.current) &&
             (a.isNamed || b.isNamed);
-          const isDragLine =
-            (a === dragged || b === dragged);
+          const isDragLine = a === dragged || b === dragged;
           const isNamedLine = a.isNamed || b.isNamed;
 
           if (isDragLine) {
@@ -520,7 +551,7 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
         if (p.isNamed) {
           const isHov = p === hoveredRef.current;
           const isDrag = p === dragged;
-          const base = (isHov || isDrag) ? 1 : 0.85;
+          const base = isHov || isDrag ? 1 : 0.85;
           const fo = base * eo;
 
           // Outer glow — larger when dragging
@@ -560,10 +591,15 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
             ctx.font = `400 9px 'Space Mono', monospace`;
             ctx.fillStyle = `rgba(64,64,192,${fo * 0.55})`;
             ctx.textAlign = "center";
-            ctx.fillText(p.node!.label.toUpperCase(), p.x, p.y - r * 2.2 - 4);
+            ctx.fillText(
+              p.node!.label.toUpperCase(),
+              p.tx,
+              p.ty - NAMED_LABEL_OFFSET
+            );
           }
         } else {
-          const opBase = p.opacity * (1 + Math.sin(p.breathPhase) * p.breathAmp * 0.5);
+          const opBase =
+            p.opacity * (1 + Math.sin(p.breathPhase) * p.breathAmp * 0.5);
           ctx.beginPath();
           ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
           ctx.fillStyle = `rgba(165,157,145,${Math.min(opBase, 0.52) * eo})`;
@@ -594,15 +630,12 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
   }, []);
 
   // ── Pointer helpers ────────────────────────────────────────────────────────
-  const getCanvasPos = useCallback(
-    (clientX: number, clientY: number) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return { x: 0, y: 0 };
-      const rect = canvas.getBoundingClientRect();
-      return { x: clientX - rect.left, y: clientY - rect.top };
-    },
-    []
-  );
+  const getCanvasPos = useCallback((clientX: number, clientY: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: clientX - rect.left, y: clientY - rect.top };
+  }, []);
 
   const findNamedAt = useCallback((cx: number, cy: number) => {
     for (const p of particlesRef.current) {
@@ -614,15 +647,18 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
     return null;
   }, []);
 
-  const releasePointerCapture = useCallback((canvas: HTMLCanvasElement, pointerId: number) => {
-    try {
-      if (canvas.hasPointerCapture(pointerId)) {
-        canvas.releasePointerCapture(pointerId);
+  const releasePointerCapture = useCallback(
+    (canvas: HTMLCanvasElement, pointerId: number) => {
+      try {
+        if (canvas.hasPointerCapture(pointerId)) {
+          canvas.releasePointerCapture(pointerId);
+        }
+      } catch {
+        // Pointer capture can already be gone after cancellation or navigation.
       }
-    } catch {
-      // Pointer capture can already be gone after cancellation or navigation.
-    }
-  }, []);
+    },
+    []
+  );
 
   // ── Pointer events ─────────────────────────────────────────────────────────
   const handlePointerDown = useCallback(
@@ -633,7 +669,7 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
       if (found) {
         const canvas = e.currentTarget;
         draggedRef.current = found;
-        dragOffsetRef.current = { dx: found.x - x, dy: found.y - y };
+        dragSourceRef.current = { x, y, startX: x, startY: y };
         hoveredRef.current = found;
         canvas.setPointerCapture(e.pointerId);
         showTooltip(found);
@@ -653,9 +689,12 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
 
       if (draggedRef.current) {
         const p = draggedRef.current;
-        p.x = x + dragOffsetRef.current.dx;
-        p.y = y + dragOffsetRef.current.dy;
-        updateTooltipPosition(p.x, p.y);
+        dragSourceRef.current = {
+          ...(dragSourceRef.current ?? { startX: x, startY: y }),
+          x,
+          y,
+        };
+        updateTooltipPosition(p.tx, p.ty);
         e.preventDefault();
         return;
       }
@@ -684,15 +723,17 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
       const canvas = canvasRef.current;
       if (!canvas) return;
       const wasDragged = draggedRef.current;
+      const dragSource = dragSourceRef.current;
 
       if (wasDragged) {
         // Check if it was a click (minimal movement)
-        const dx = wasDragged.x - (wasDragged.tx + wasDragged.dispX);
-        const dy = wasDragged.y - (wasDragged.ty + wasDragged.dispY);
+        const dx = dragSource ? dragSource.x - dragSource.startX : 0;
+        const dy = dragSource ? dragSource.y - dragSource.startY : 0;
         const moved = Math.sqrt(dx * dx + dy * dy);
 
-        // Release: let spring physics pull it back
+        // Release the pointer force source. The named node never moved.
         draggedRef.current = null;
+        dragSourceRef.current = null;
         releasePointerCapture(canvas, e.pointerId);
         canvas.style.cursor = "default";
 
@@ -706,21 +747,26 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
     [hideTooltip, releasePointerCapture]
   );
 
-  const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const canvas = e.currentTarget;
-    if (draggedRef.current) {
-      draggedRef.current = null;
-      releasePointerCapture(canvas, e.pointerId);
-    }
-    hoveredRef.current = null;
-    hideTooltip();
-    canvas.style.cursor = "default";
-  }, [hideTooltip, releasePointerCapture]);
+  const handlePointerLeave = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      const canvas = e.currentTarget;
+      if (draggedRef.current) {
+        draggedRef.current = null;
+        dragSourceRef.current = null;
+        releasePointerCapture(canvas, e.pointerId);
+      }
+      hoveredRef.current = null;
+      hideTooltip();
+      canvas.style.cursor = "default";
+    },
+    [hideTooltip, releasePointerCapture]
+  );
 
   const handlePointerCancel = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = e.currentTarget;
       draggedRef.current = null;
+      dragSourceRef.current = null;
       hoveredRef.current = null;
       releasePointerCapture(canvas, e.pointerId);
       canvas.style.cursor = "default";
@@ -736,7 +782,12 @@ export default function SignalField({ nodes, positionMode = "configured" }: Sign
     >
       <canvas
         ref={canvasRef}
-        style={{ display: "block", width: "100%", height: "100%", touchAction: "none" }}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          touchAction: "none",
+        }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

@@ -84,6 +84,7 @@ shared/
 ## Admin Panel
 
 Access `/admin` to manage:
+
 - **Navigation Nodes** — Add, edit, or remove the four main entry points
 - **Content Items** — Organize articles, podcast episodes, or AI experiments by category
 
@@ -96,6 +97,17 @@ The site is deployed on Manus with automatic GitHub sync. To publish changes:
 1. Commit and push to GitHub
 2. Click **Publish** in the Manus Management UI
 3. Changes go live at `unscaled.me`
+
+### Scheduled RSS Sync
+
+The Info page reads RSS items from the database. The scheduled endpoint
+`/api/scheduled/sync-rss` refreshes that table from
+`https://aihot.virxact.com/feed.xml`.
+
+For production, set `RSS_SYNC_SECRET` and send it as `x-rss-sync-secret` or as a
+JSON body `secret` field from the scheduled task. Legacy Manus cron requests are
+also accepted when `RSS_SYNC_SECRET` is unset and the platform forwards
+`x-manus-cron-task-uid`.
 
 ## Design Philosophy
 

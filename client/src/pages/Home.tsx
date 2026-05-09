@@ -34,18 +34,21 @@ const srOnly: React.CSSProperties = {
 
 // Static fallback nodes — used while DB loads or if DB is empty
 const FALLBACK_NODES: NavNode[] = [
-  { id: "github",   label: "Github",   url: "https://github.com/massif-01" },
-  { id: "podcast",  label: "Podcast",  url: "/podcast" },
-  { id: "ai",       label: "AI",       url: "/ai" },
-  { id: "info",     label: "Info",     url: "/info" },
-  { id: "auracap",  label: "AuraCAP",  url: "https://github.com/massif-01/AuraCap" },
+  { id: "github", label: "Github", url: "https://github.com/massif-01" },
+  { id: "podcast", label: "Podcast", url: "/podcast" },
+  { id: "ai", label: "AI", url: "/ai" },
+  { id: "info", label: "Info", url: "/info" },
+  {
+    id: "auracap",
+    label: "AuraCAP",
+    url: "https://github.com/massif-01/AuraCap",
+  },
 ];
 
 function isPublicNavNode(value: unknown): value is PublicNavNode {
   if (!value || typeof value !== "object") return false;
   const node = value as Record<string, unknown>;
-  const hasValidId =
-    typeof node.id === "string" || typeof node.id === "number";
+  const hasValidId = typeof node.id === "string" || typeof node.id === "number";
   return (
     hasValidId &&
     typeof node.label === "string" &&
@@ -128,9 +131,7 @@ export default function Home() {
   }, []);
 
   const navNodes: NavNode[] =
-    dbNodes && dbNodes.length > 0
-      ? dbNodes
-      : FALLBACK_NODES;
+    dbNodes && dbNodes.length > 0 ? dbNodes : FALLBACK_NODES;
 
   // Both mobile and desktop use side-by-side layout.
   // Mobile: wordmark 42vw | desktop: wordmark 46%
@@ -152,7 +153,7 @@ export default function Home() {
         width: "100vw",
         height: "100dvh",
         display: "flex",
-        flexDirection: "row",   // always side-by-side
+        flexDirection: "row", // always side-by-side
         overflow: "hidden",
         background: "oklch(0.98 0.008 85)",
         position: "relative",
@@ -160,7 +161,9 @@ export default function Home() {
       }}
     >
       {/* SEO: visually hidden H2 */}
-      <h2 style={srOnly}>Unscaled — Podcast, AI, GitHub &amp; essays beyond hardware metrics.</h2>
+      <h2 style={srOnly}>
+        Unscaled — Podcast, AI, GitHub &amp; essays beyond hardware metrics.
+      </h2>
 
       {/* ── Wordmark ─────────────────────────────────────────────────────── */}
       <div
@@ -296,7 +299,7 @@ export default function Home() {
           transition: "opacity 1.8s ease 0.25s",
         }}
       >
-        <SignalField nodes={navNodes} positionMode="session-random" />
+        <SignalField nodes={navNodes} />
         <HoverHint isMobile={isMobile} />
       </div>
 
@@ -305,7 +308,9 @@ export default function Home() {
         style={{
           position: "absolute",
           bottom: isMobile ? "0.6rem" : "clamp(1.2rem, 2.5vw, 2rem)",
-          left: isMobile ? "clamp(1.8rem, 6.5vw, 2.8rem)" : "clamp(3.2rem, 7vw, 6.5rem)",
+          left: isMobile
+            ? "clamp(1.8rem, 6.5vw, 2.8rem)"
+            : "clamp(3.2rem, 7vw, 6.5rem)",
           fontFamily: "'Space Mono', monospace",
           fontSize: "7px",
           letterSpacing: "0.18em",

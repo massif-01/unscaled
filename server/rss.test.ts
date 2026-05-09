@@ -1,127 +1,266 @@
-/**
- * RSS Functionality Tests
- * Tests for RSS feed fetching, parsing, translation, and storage
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  fetchRssFeed,
+  processRssItem,
+  syncRssFeed,
+  translateTitleToEnglish,
+} from "./_core/rss";
 
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { syncRssFeed, fetchRssFeed, translateTitleToEnglish } from "./_core/rss";
-import { getVisibleRssItems, deleteOldRssItems } from "./db";
+const dbMocks = vi.hoisted(() => ({
+  createRssItem: vi.fn(),
+  getRssItemByUrl: vi.fn(),
+}));
 
-describe("RSS Functionality", () => {
-  describe("fetchRssFeed", () => {
-    it("should fetch and parse RSS feed from valid URL", async () => {
-      // This test requires actual network access to aihot.virxact.com
-      // In a real scenario, you'd mock the fetch call
-      try {
-        const items = await fetchRssFeed("https://aihot.virxact.com/feed.xml");
-        expect(Array.isArray(items)).toBe(true);
-        if (items.length > 0) {
-          expect(items[0]).toHaveProperty("title");
-          expect(items[0]).toHaveProperty("link");
-        }
-      } catch (error) {
-        // Network might not be available in test environment
-        console.log("Skipping network test:", error);
-      }
-    });
+const llmMocks = vi.hoisted(() => ({
+  invokeLLM: vi.fn(),
+}));
 
-    it("should throw error for invalid URL", async () => {
-      await expect(
-        fetchRssFeed("https://invalid-domain-that-does-not-exist-12345.com/feed.xml")
-      ).rejects.toThrow();
-    });
+vi.mock("./db", () => ({
+  createRssItem: dbMocks.createRssItem,
+  getRssItemByUrl: dbMocks.getRssItemByUrl,
+}));
+
+vi.mock("./_core/llm", () => ({
+  invokeLLM: llmMocks.invokeLLM,
+}));
+
+const originalFetch = globalThis.fetch;
+
+function mockFetchResponse(body: string, status: number = 200) {
+  vi.mocked(globalThis.fetch).mockResolvedValue(
+    new Response(status === 304 ? null : body, {
+      status,
+      statusText: status === 200 ? "OK" : "",
+    })
+  );
+}
+
+function mockTranslation(text: string) {
+  llmMocks.invokeLLM.mockResolvedValue({
+    id: "completion-1",
+    created: 0,
+    model: "test-model",
+    choices: [
+      {
+        index: 0,
+        message: { role: "assistant", content: text },
+        finish_reason: "stop",
+      },
+    ],
+  });
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  globalThis.fetch = vi.fn() as unknown as typeof fetch;
+});
+
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+});
+
+describe("RSS feed parsing", () => {
+  it("normalizes xml2js scalar fields and enclosures", async () => {
+    mockFetchResponse(`
+      <rss>
+        <channel>
+          <item>
+            <title>测试标题</title>
+            <link>https://example.com/a</link>
+            <description><![CDATA[<p>摘要</p><img src="https://example.com/fallback.png"/>]]></description>
+            <pubDate>Sun, 10 May 2026 00:00:00 GMT</pubDate>
+            <enclosure url="https://example.com/cover.png" type="image/png" />
+          </item>
+        </channel>
+      </rss>
+    `);
+
+    const items = await fetchRssFeed("https://example.com/feed.xml");
+
+    expect(items).toEqual([
+      {
+        title: "测试标题",
+        link: "https://example.com/a",
+        description: '<p>摘要</p><img src="https://example.com/fallback.png"/>',
+        pubDate: "Sun, 10 May 2026 00:00:00 GMT",
+        enclosure: [
+          {
+            url: "https://example.com/cover.png",
+            type: "image/png",
+          },
+        ],
+      },
+    ]);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://example.com/feed.xml",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "User-Agent": expect.stringContaining("Unscaled RSS Fetcher"),
+        }),
+      })
+    );
   });
 
-  describe("translateTitleToEnglish", () => {
-    it("should translate Chinese text to English", async () => {
-      const chineseTitle = "人工智能的未来发展方向";
-      const translation = await translateTitleToEnglish(chineseTitle);
+  it("drops malformed feed items instead of storing array-shaped data", async () => {
+    mockFetchResponse(`
+      <rss>
+        <channel>
+          <item><title>Missing link</title></item>
+          <item><title>Valid</title><link>https://example.com/valid</link></item>
+        </channel>
+      </rss>
+    `);
 
-      // Translation should be a non-empty string
-      expect(typeof translation).toBe("string");
-      expect(translation.length).toBeGreaterThan(0);
-
-      // Should not be the same as input (unless LLM fails and returns original)
-      // This is a weak assertion but acceptable for integration testing
-      console.log(`Translated: "${chineseTitle}" -> "${translation}"`);
-    });
-
-    it("should handle empty string gracefully", async () => {
-      const result = await translateTitleToEnglish("");
-      expect(typeof result).toBe("string");
-    });
+    await expect(fetchRssFeed("https://example.com/feed.xml")).resolves.toEqual(
+      [
+        {
+          title: "Valid",
+          link: "https://example.com/valid",
+          description: undefined,
+          pubDate: undefined,
+        },
+      ]
+    );
   });
 
-  describe("RSS Storage and Retrieval", () => {
-    it("should retrieve visible RSS items from database", async () => {
-      try {
-        const items = await getVisibleRssItems(10);
-        expect(Array.isArray(items)).toBe(true);
+  it("treats HTTP 304 as no new items", async () => {
+    mockFetchResponse("", 304);
 
-        // If items exist, verify structure
-        if (items.length > 0) {
-          const item = items[0];
-          expect(item).toHaveProperty("id");
-          expect(item).toHaveProperty("titleZh");
-          expect(item).toHaveProperty("url");
-          expect(item.visible).toBe(true);
-        }
-      } catch (error) {
-        // Database might not have data yet
-        console.log("Database check:", error);
-      }
-    });
+    await expect(fetchRssFeed("https://example.com/feed.xml")).resolves.toEqual(
+      []
+    );
+  });
+});
 
-    it("should respect limit parameter in getVisibleRssItems", async () => {
-      try {
-        const items = await getVisibleRssItems(5);
-        expect(items.length).toBeLessThanOrEqual(5);
-      } catch (error) {
-        console.log("Limit test:", error);
-      }
-    });
+describe("RSS translation and storage", () => {
+  it("returns the translated title from the LLM", async () => {
+    mockTranslation("Future directions for artificial intelligence");
+
+    await expect(
+      translateTitleToEnglish("人工智能的未来发展方向")
+    ).resolves.toBe("Future directions for artificial intelligence");
   });
 
-  describe("RSS Sync Workflow", () => {
-    it("should complete RSS sync without errors", async () => {
-      // This test can take a long time due to LLM translation calls
-      // Increase timeout to 30 seconds
-      // This is an integration test
-      // It will actually fetch from the RSS feed and store in database
-      try {
-        // Limit to 5 items for faster testing
-        const result = await syncRssFeed(
-          "https://aihot.virxact.com/feed.xml",
-          "aihot"
-        );
+  it("falls back to the original title when translation fails", async () => {
+    llmMocks.invokeLLM.mockRejectedValue(new Error("missing key"));
 
-        expect(result).toHaveProperty("totalItems");
-        expect(result).toHaveProperty("newItems");
-        expect(typeof result.totalItems).toBe("number");
-        expect(typeof result.newItems).toBe("number");
-        expect(result.totalItems).toBeGreaterThanOrEqual(0);
-        expect(result.newItems).toBeGreaterThanOrEqual(0);
-
-        console.log(
-          `RSS Sync Result: ${result.newItems}/${result.totalItems} new items`
-        );
-      } catch (error) {
-        // Network or database issues
-        console.log("RSS sync test failed:", error);
-        throw error;
-      }
-    }, 30000); // 30 second timeout
+    await expect(translateTitleToEnglish("人工智能")).resolves.toBe("人工智能");
   });
 
-  describe("Data Cleanup", () => {
-    it("should delete old RSS items", async () => {
-      try {
-        // This should not throw
-        await deleteOldRssItems(30);
-        expect(true).toBe(true);
-      } catch (error) {
-        console.log("Cleanup test:", error);
-      }
-    });
+  it("skips existing RSS items before calling the LLM", async () => {
+    dbMocks.getRssItemByUrl.mockResolvedValue({ id: 1 });
+
+    await expect(
+      processRssItem({
+        title: "Existing",
+        link: "https://example.com/existing",
+      })
+    ).resolves.toBe(false);
+
+    expect(llmMocks.invokeLLM).not.toHaveBeenCalled();
+    expect(dbMocks.createRssItem).not.toHaveBeenCalled();
+  });
+
+  it("stores new items with normalized metadata", async () => {
+    dbMocks.getRssItemByUrl.mockResolvedValue(undefined);
+    dbMocks.createRssItem.mockResolvedValue({ id: 2 });
+    mockTranslation("Translated title");
+
+    await expect(
+      processRssItem({
+        title: "新标题",
+        link: "https://example.com/new",
+        description: '<p>摘要</p><img src="https://example.com/fallback.png">',
+        pubDate: "Sun, 10 May 2026 00:00:00 GMT",
+        enclosure: [
+          { url: "https://example.com/cover.png", type: "image/png" },
+        ],
+      })
+    ).resolves.toBe(true);
+
+    expect(dbMocks.createRssItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        titleZh: "新标题",
+        titleEn: "Translated title",
+        url: "https://example.com/new",
+        imageUrl: "https://example.com/cover.png",
+        translated: true,
+        visible: true,
+      })
+    );
+  });
+
+  it("syncs deterministically without live network, DB, or LLM services", async () => {
+    mockFetchResponse(`
+      <rss>
+        <channel>
+          <item><title>Old</title><link>https://example.com/old</link></item>
+          <item><title>New</title><link>https://example.com/new</link></item>
+        </channel>
+      </rss>
+    `);
+    dbMocks.getRssItemByUrl
+      .mockResolvedValueOnce({ id: 1 })
+      .mockResolvedValueOnce(undefined);
+    dbMocks.createRssItem.mockResolvedValue({ id: 2 });
+    mockTranslation("New translated");
+
+    await expect(
+      syncRssFeed("https://example.com/feed.xml", "example", { delayMs: 0 })
+    ).resolves.toEqual({ totalItems: 2, newItems: 1 });
+
+    expect(dbMocks.createRssItem).toHaveBeenCalledTimes(1);
+  });
+
+  it("caps new items processed in one sync", async () => {
+    mockFetchResponse(`
+      <rss>
+        <channel>
+          <item><title>One</title><link>https://example.com/one</link></item>
+          <item><title>Two</title><link>https://example.com/two</link></item>
+          <item><title>Three</title><link>https://example.com/three</link></item>
+        </channel>
+      </rss>
+    `);
+    dbMocks.getRssItemByUrl.mockResolvedValue(undefined);
+    dbMocks.createRssItem.mockResolvedValue({ id: 2 });
+    mockTranslation("Translated");
+
+    await expect(
+      syncRssFeed("https://example.com/feed.xml", "example", {
+        delayMs: 0,
+        maxNewItems: 2,
+      })
+    ).resolves.toEqual({ totalItems: 3, newItems: 2 });
+
+    expect(dbMocks.getRssItemByUrl).toHaveBeenCalledTimes(2);
+    expect(llmMocks.invokeLLM).toHaveBeenCalledTimes(2);
+    expect(dbMocks.createRssItem).toHaveBeenCalledTimes(2);
+  });
+
+  it("counts failed new-item attempts against the sync cap", async () => {
+    mockFetchResponse(`
+      <rss>
+        <channel>
+          <item><title>One</title><link>https://example.com/one</link></item>
+          <item><title>Two</title><link>https://example.com/two</link></item>
+          <item><title>Three</title><link>https://example.com/three</link></item>
+        </channel>
+      </rss>
+    `);
+    dbMocks.getRssItemByUrl.mockResolvedValue(undefined);
+    dbMocks.createRssItem.mockRejectedValue(new Error("database down"));
+    mockTranslation("Translated");
+
+    await expect(
+      syncRssFeed("https://example.com/feed.xml", "example", {
+        delayMs: 0,
+        maxNewItems: 2,
+      })
+    ).resolves.toEqual({ totalItems: 3, newItems: 0 });
+
+    expect(dbMocks.getRssItemByUrl).toHaveBeenCalledTimes(2);
+    expect(llmMocks.invokeLLM).toHaveBeenCalledTimes(2);
+    expect(dbMocks.createRssItem).toHaveBeenCalledTimes(2);
   });
 });
