@@ -1,4 +1,4 @@
-import { and, asc, eq, lt } from "drizzle-orm";
+import { and, asc, eq, lt, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   ContentItem,
@@ -172,15 +172,16 @@ export async function deleteContentItem(id: number): Promise<void> {
 
 // ── RSS Items ─────────────────────────────────────────────────────────────────
 
-export async function getVisibleRssItems(limit: number = 50): Promise<RssItem[]> {
+export async function getVisibleRssItems(limit: number = 10, offset: number = 0): Promise<RssItem[]> {
   const db = await getDb();
   if (!db) return [];
   return db
     .select()
     .from(rssItems)
     .where(eq(rssItems.visible, true))
-    .orderBy(asc(rssItems.publishedAt))
-    .limit(limit);
+    .orderBy(desc(rssItems.publishedAt))
+    .limit(limit)
+    .offset(offset);
 }
 
 export async function getAllRssItems(limit: number = 100): Promise<RssItem[]> {

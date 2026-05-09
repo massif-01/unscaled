@@ -1,9 +1,9 @@
 /*
  * Info Page — Latest AI News & Insights
- * Displays RSS feed from aihot.virxact.com with automatic daily updates
+ * Displays RSS feed from aihot.virxact.com with infinite scroll loading
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 
@@ -18,19 +18,66 @@ interface RssItem {
   visible: boolean;
 }
 
-export default function InfoPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const PAGE_SIZE = 10;
 
-  // Fetch RSS items from backend
-  const { data: rssItems = [], isLoading: isFetching } = trpc.rss.list.useQuery({
-    limit: 50,
+export default function InfoPage() {
+  const [items, setItems] = useState<RssItem[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // Fetch RSS items with pagination
+  const { data: pageItems = [], isLoading: isFetching } = trpc.rss.list.useQuery({
+    offset,
+    limit: PAGE_SIZE,
   });
+
+  // Load more items when page changes
+  useEffect(() => {
+    if (isFetching) {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+      if (pageItems.length > 0) {
+        setItems((prev) => [...prev, ...pageItems]);
+        setHasMore(pageItems.length === PAGE_SIZE);
+      } else if (offset === 0) {
+        // First load returned no items
+        setHasMore(false);
+      } else {
+        // No more items
+        setHasMore(false);
+      }
+    }
+  }, [pageItems, isFetching, offset]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          setOffset((prev) => prev + PAGE_SIZE);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => {
+      if (observerTarget.current) {
+        observer.unobserve(observerTarget.current);
+      }
+    };
+  }, [hasMore, isLoading]);
 
   useEffect(() => {
     document.title = "Info — Unscaled";
-    setIsLoading(isFetching);
-  }, [isFetching]);
+  }, []);
 
   const formatDate = (date?: Date | null) => {
     if (!date) return "";
@@ -144,23 +191,8 @@ export default function InfoPage() {
           maxWidth: "1000px",
         }}
       >
-        {/* Loading state */}
-        {isFetching && (
-          <div
-            style={{
-              textAlign: "center",
-              padding: "clamp(2rem, 4vw, 4rem)",
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "1.1rem",
-              color: "oklch(0.50 0.010 65)",
-            }}
-          >
-            Loading latest news...
-          </div>
-        )}
-
         {/* Error state */}
-        {error && !isFetching && (
+        {error && (
           <div
             style={{
               textAlign: "center",
@@ -184,7 +216,7 @@ export default function InfoPage() {
         )}
 
         {/* Empty state */}
-        {!isFetching && !error && rssItems.length === 0 && (
+        {!error && items.length === 0 && !isLoading && (
           <div
             style={{
               textAlign: "center",
@@ -208,7 +240,7 @@ export default function InfoPage() {
         )}
 
         {/* RSS items grid */}
-        {!isFetching && !error && rssItems.length > 0 && (
+        {items.length > 0 && (
           <div
             style={{
               display: "grid",
@@ -217,7 +249,7 @@ export default function InfoPage() {
               width: "100%",
             }}
           >
-            {rssItems.map((item: RssItem) => (
+            {items.map((item: RssItem) => (
               <a
                 key={item.id}
                 href={item.url}
@@ -362,6 +394,45 @@ export default function InfoPage() {
             ))}
           </div>
         )}
+
+        {/* Infinite scroll trigger */}
+        <div
+          ref={observerTarget}
+          style={{
+            marginTop: "clamp(3rem, 6vw, 5rem)",
+            textAlign: "center",
+            minHeight: "100px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {isLoading && (
+            <p
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "1rem",
+                color: "oklch(0.50 0.010 65)",
+              }}
+            >
+              Loading more...
+            </p>
+          )}
+          {!hasMore && items.length > 0 && (
+            <p
+              style={{
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "0.75rem",
+                letterSpacing: "0.05em",
+                color: "oklch(0.60 0.008 65)",
+                textTransform: "uppercase",
+                opacity: 0.5,
+              }}
+            >
+              No more items
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Footer note */}
