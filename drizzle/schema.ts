@@ -67,3 +67,31 @@ export const contentItems = mysqlTable("content_items", {
 
 export type ContentItem = typeof contentItems.$inferSelect;
 export type InsertContentItem = typeof contentItems.$inferInsert;
+
+// ── RSS Items ─────────────────────────────────────────────────────────────────
+export const rssItems = mysqlTable("rss_items", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Original Chinese title */
+  titleZh: varchar("titleZh", { length: 512 }).notNull(),
+  /** English translated title */
+  titleEn: varchar("titleEn", { length: 512 }),
+  /** Article description/summary */
+  description: text("description"),
+  /** Article URL */
+  url: varchar("url", { length: 512 }).notNull().unique(),
+  /** Thumbnail/cover image */
+  imageUrl: varchar("imageUrl", { length: 512 }),
+  /** RSS source name */
+  source: varchar("source", { length: 128 }).default("aihot").notNull(),
+  /** Original publish time */
+  publishedAt: timestamp("publishedAt"),
+  /** Whether translated */
+  translated: boolean("translated").default(false).notNull(),
+  /** Whether visible */
+  visible: boolean("visible").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type RssItem = typeof rssItems.$inferSelect;
+export type InsertRssItem = typeof rssItems.$inferInsert;

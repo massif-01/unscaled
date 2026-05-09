@@ -1,13 +1,16 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   ContentItem,
   InsertContentItem,
   InsertNavNode,
+  InsertRssItem,
   InsertUser,
   NavNode,
+  RssItem,
   contentItems,
   navNodes,
+  rssItems,
   users,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -165,4 +168,53 @@ export async function deleteContentItem(id: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.delete(contentItems).where(eq(contentItems.id, id));
+}
+
+// ── RSS Items ─────────────────────────────────────────────────────────────────
+
+export async function getVisibleRssItems(limit: number = 50): Promise<RssItem[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(rssItems)
+    .where(eq(rssItems.visible, true))
+    .orderBy(asc(rssItems.publishedAt))
+    .limit(limit);
+}
+
+export async function getAllRssItems(limit: number = 100): Promise<RssItem[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rssItems).orderBy(asc(rssItems.publishedAt)).limit(limit);
+}
+
+export async function createRssItem(data: InsertRssItem): Promise<RssItem | null> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(rssItems).values(data);
+  if (result[0].insertId) {
+    return db.select().from(rssItems).where(eq(rssItems.id, Number(result[0].insertId))).then(r => r[0] || null);
+  }
+  return null;
+}
+
+export async function updateRssItem(id: number, data: Partial<InsertRssItem>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(rssItems).set(data).where(eq(rssItems.id, id));
+}
+
+export async function getRssItemByUrl(url: string): Promise<RssItem | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(rssItems).where(eq(rssItems.url, url)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function deleteOldRssItems(daysToKeep: number = 30): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const cutoffDate = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000);
+  await db.delete(rssItems).where(lt(rssItems.publishedAt, cutoffDate));
 }

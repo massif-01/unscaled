@@ -13,6 +13,7 @@ import {
   getAllNavNodes,
   getVisibleContentItems,
   getVisibleNavNodes,
+  getVisibleRssItems,
   updateContentItem,
   updateNavNode,
 } from "./db";
@@ -95,6 +96,13 @@ const contentRouter = router({
     .mutation(async ({ input }) => { await deleteContentItem(input.id); return { success: true }; }),
 });
 
+// ── RSS Router ─────────────────────────────────────────────────────────────────
+const rssRouter = router({
+  list: publicProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(100).default(50) }))
+    .query(({ input }) => getVisibleRssItems(input.limit)),
+});
+
 // ── App Router ─────────────────────────────────────────────────────────────────
 export const appRouter = router({
   system: systemRouter,
@@ -108,6 +116,7 @@ export const appRouter = router({
   }),
   nodes: nodesRouter,
   content: contentRouter,
+  rss: rssRouter,
 });
 
 export type AppRouter = typeof appRouter;
