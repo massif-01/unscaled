@@ -299,7 +299,7 @@ export default function Home() {
           transition: "opacity 1.8s ease 0.25s",
         }}
       >
-        <SignalField nodes={navNodes} />
+        <SignalField nodes={navNodes} positionMode="session-random" />
         <HoverHint isMobile={isMobile} />
       </div>
 
