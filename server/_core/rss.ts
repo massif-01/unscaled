@@ -29,11 +29,25 @@ interface ParsedRssFeed {
  */
 export async function fetchRssFeed(feedUrl: string): Promise<RssFeedItem[]> {
   try {
-    const response = await fetch(feedUrl, {
+    // Add timestamp to URL to bypass cache
+    const urlWithTimestamp = feedUrl.includes('?') 
+      ? `${feedUrl}&t=${Date.now()}` 
+      : `${feedUrl}?t=${Date.now()}`;
+    
+    const response = await fetch(urlWithTimestamp, {
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; Unscaled RSS Fetcher)",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
+
+    // 304 Not Modified 是正常的，表示内容未变，返回空数组
+    if (response.status === 304) {
+      console.log(`[RSS] Feed not modified (304) - keeping existing data`);
+      return [];
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);

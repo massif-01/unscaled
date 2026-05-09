@@ -6,7 +6,7 @@
 import { Request, Response } from "express";
 import { syncRssFeed } from "./rss";
 
-const RSS_FEED_URL = "https://aihot.virxact.com/feed.xml";
+const RSS_FEED_URL = "https://aihot.virxact.com/feed/daily.xml";
 
 export async function rssSyncHandler(req: Request, res: Response) {
   try {
