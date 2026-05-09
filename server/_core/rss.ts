@@ -101,7 +101,8 @@ function extractImageUrl(item: RssFeedItem): string | undefined {
 
   // Try to extract from description (simple regex for img src)
   if (item.description) {
-    const imgMatch = item.description.match(/<img[^>]+src=["']([^"']+)["']/);
+    const descStr = typeof item.description === "string" ? item.description : String(item.description);
+    const imgMatch = descStr.match(/<img[^>]+src=["']([^"']+)["']/);
     if (imgMatch?.[1]) {
       return imgMatch[1];
     }
@@ -170,9 +171,13 @@ export async function syncRssFeed(feedUrl: string, source: string = "aihot") {
     const items = await fetchRssFeed(feedUrl);
     console.log(`[RSS] Fetched ${items.length} items`);
 
+    // Limit to first 5 items for faster testing
+    const itemsToProcess = items.slice(0, 5);
+    console.log(`[RSS] Processing ${itemsToProcess.length} items`);
+
     // Process each item
     let successCount = 0;
-    for (const item of items) {
+    for (const item of itemsToProcess) {
       const success = await processRssItem(item, source);
       if (success) successCount++;
       // Add small delay to avoid rate limiting on LLM
