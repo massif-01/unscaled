@@ -163,7 +163,7 @@ export async function processRssItem(
 /**
  * Main RSS sync function: fetch feed and process all items
  */
-export async function syncRssFeed(feedUrl: string, source: string = "aihot") {
+export async function syncRssFeed(feedUrl: string = "https://aihot.virxact.com/feed/daily.xml", source: string = "aihot") {
   try {
     console.log(`[RSS] Starting sync from ${feedUrl}`);
 

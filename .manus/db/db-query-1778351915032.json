@@ -1,0 +1,35 @@
+{
+  "query": "SELECT titleZh, titleEn, url FROM rss_items ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QBUucXQ5QyP51sB.e4908aac4aa6 --database Hm6ffumcrYsvgFd7UNs9t7 --execute SELECT titleZh, titleEn, url FROM rss_items ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "titleZh": "Tesla利用视觉AI提前预判碰撞，大幅降低伤亡风险",
+      "titleEn": "Tesla utilizes visual AI to preemptively predict collisions, significantly reducing the risk of casualties and injuries.",
+      "url": "https://x.com/elonmusk/status/2053141290989318335"
+    },
+    {
+      "titleZh": "HappyHorse上线阿里云，AI视频无需等待",
+      "titleEn": "HappyHorse launches on Alibaba Cloud, AI video without waiting.",
+      "url": "https://x.com/alibaba_cloud/status/2053153199561863454"
+    },
+    {
+      "titleZh": "GPT-Realtime-2语音控制CRM集成方案",
+      "titleEn": "GPT-Realtime-2 Voice-Controlled CRM Integration Solution",
+      "url": "https://x.com/OpenAIDevs/status/2053161503470366881"
+    },
+    {
+      "titleZh": "AI放大能动性差异，用户两极分化加剧",
+      "titleEn": "AI amplifies differences in agency, exacerbating user polarization.",
+      "url": "https://x.com/fchollet/status/2053169711341551936"
+    },
+    {
+      "titleZh": "帕累托代码：免费实验性编码路由工具",
+      "titleEn": "Pareto Code: Free Experimental Coding Routing Tool",
+      "url": "https://x.com/OpenRouter/status/2053170520087024109"
+    }
+  ],
+  "messages": [],
+  "stdout": "titleZh\ttitleEn\turl\nTesla利用视觉AI提前预判碰撞，大幅降低伤亡风险\tTesla utilizes visual AI to preemptively predict collisions, significantly reducing the risk of casualties and injuries.\thttps://x.com/elonmusk/status/2053141290989318335\nHappyHorse上线阿里云，AI视频无需等待\tHappyHorse launches on Alibaba Cloud, AI video without waiting.\thttps://x.com/alibaba_cloud/status/2053153199561863454\nGPT-Realtime-2语音控制CRM集成方案\tGPT-Realtime-2 Voice-Controlled CRM Integration Solution\thttps://x.com/OpenAIDevs/status/2053161503470366881\nAI放大能动性差异，用户两极分化加剧\tAI amplifies differences in agency, exacerbating user polarization.\thttps://x.com/fchollet/status/2053169711341551936\n帕累托代码：免费实验性编码路由工具\tPareto Code: Free Experimental Coding Routing Tool\thttps://x.com/OpenRouter/status/2053170520087024109\n",
+  "stderr": "",
+  "execution_time_ms": 261
+}
