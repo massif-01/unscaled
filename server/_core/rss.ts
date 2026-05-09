@@ -83,6 +83,8 @@ export async function translateTitleToEnglish(
           content: chineseTitle,
         },
       ],
+      // Use minimal config for simple translation — no thinking needed
+      max_tokens: 256,
     });
 
     const content = response.choices?.[0]?.message?.content;
@@ -185,8 +187,7 @@ export async function syncRssFeed(feedUrl: string = "https://aihot.virxact.com/f
     const items = await fetchRssFeed(feedUrl);
     console.log(`[RSS] Fetched ${items.length} items`);
 
-    // Limit to first 5 items for faster testing
-    const itemsToProcess = items.slice(0, 5);
+    const itemsToProcess = items;
     console.log(`[RSS] Processing ${itemsToProcess.length} items`);
 
     // Process each item

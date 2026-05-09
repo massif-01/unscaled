@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as total FROM rss_items;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user QBUucXQ5QyP51sB.e4908aac4aa6 --database Hm6ffumcrYsvgFd7UNs9t7 --execute SELECT COUNT(*) as total FROM rss_items;",
+  "rows": [
+    {
+      "total": "50"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n50\n",
+  "stderr": "",
+  "execution_time_ms": 316
+}
