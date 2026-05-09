@@ -16,25 +16,29 @@ interface AIItem {
 const aiItems: AIItem[] = [
   {
     title: "Qwen 3.6 Benchmark Explorer",
-    description: "Performance comparison across 12 AI evaluation sets. Qwen3.6-27B vs mainstream models on agentic coding, reasoning, and multimodal tasks.",
+    description:
+      "Performance comparison across 12 AI evaluation sets. Qwen3.6-27B vs mainstream models on agentic coding, reasoning, and multimodal tasks.",
     url: "https://qwen.unscaled.me",
     category: "Benchmark",
   },
   {
     title: "Daily Stock Analysis",
-    description: "LLM-powered intelligent stock analyzer for A/H/US markets. Automated decision dashboards with multi-dimensional analysis: technical patterns, real-time quotes, fund flows, news sentiment, and AI-driven insights. Supports 11 built-in strategies, backtesting, and multi-channel notifications via WeChat, Feishu, Telegram, Discord, Slack, and email. Zero-cost execution on GitHub Actions or Docker.",
+    description:
+      "LLM-powered intelligent stock analyzer for A/H/US markets. Automated decision dashboards with multi-dimensional analysis: technical patterns, real-time quotes, fund flows, news sentiment, and AI-driven insights. Supports 11 built-in strategies, backtesting, and multi-channel notifications via WeChat, Feishu, Telegram, Discord, Slack, and email. Zero-cost execution on GitHub Actions or Docker.",
     url: "/ai/daily-stock-analysis",
     category: "Quant",
   },
   {
     title: "AuraCap",
-    description: "The first open-source project using GitHub Release as transient middleware. iOS Shortcuts capture screenshots/recordings → Release Assets → GitHub Actions AI processing → structured Markdown timeline. Zero infrastructure cost, zero webhooks, zero S3. Fork the repo, configure AI secrets, deploy instantly. Your data stays within GitHub's security boundary.",
+    description:
+      "The first open-source project using GitHub Release as transient middleware. iOS Shortcuts capture screenshots/recordings → Release Assets → GitHub Actions AI processing → structured Markdown timeline. Zero infrastructure cost, zero webhooks, zero S3. Fork the repo, configure AI secrets, deploy instantly. Your data stays within GitHub's security boundary.",
     url: "/ai/auracap",
     category: "Knowledge",
   },
   {
     title: "ChatRaw",
-    description: "Ultra-minimal AI chat UI: 30-second Docker deployment, zero registration, OpenAI-compatible. Supports any model (Ollama, vLLM, LocalAI, LM Studio). Multi-model configuration, document parsing, vision AI, thinking mode, plugin ecosystem. Lightweight (60MB), responsive design, perfect Lighthouse scores.",
+    description:
+      "Ultra-minimal AI chat UI: 30-second Docker deployment, zero registration, OpenAI-compatible. Supports any model (Ollama, vLLM, LocalAI, LM Studio). Multi-model configuration, document parsing, vision AI, thinking mode, plugin ecosystem. Lightweight (60MB), responsive design, perfect Lighthouse scores.",
     url: "/ai/chatraw",
     category: "Interface",
   },
@@ -132,7 +136,8 @@ export default function AiPage() {
           marginBottom: "clamp(2.5rem, 5vw, 4rem)",
         }}
       >
-        Observations on model performance, hardware limits, and the space between signal and noise.
+        Observations on model performance, hardware limits, and the space
+        between signal and noise.
       </p>
 
       {/* Hairline */}
@@ -171,15 +176,17 @@ export default function AiPage() {
               paddingBottom: "1.5rem",
               borderBottom: "1px solid oklch(0.88 0.006 65)",
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.opacity = "1";
-              (e.currentTarget as HTMLElement).style.transform = "translateX(8px)";
+              (e.currentTarget as HTMLElement).style.transform =
+                "translateX(8px)";
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.opacity = "0.9";
-              (e.currentTarget as HTMLElement).style.transform = "translateX(0)";
+              (e.currentTarget as HTMLElement).style.transform =
+                "translateX(0)";
             }}
-            onClick={(e) => {
+            onClick={e => {
               if (item.url.startsWith("/")) {
                 e.preventDefault();
                 window.location.href = item.url;
@@ -215,7 +222,7 @@ export default function AiPage() {
                 padding: 0,
               }}
             >
-              {item.title} →
+              {item.title}
             </h2>
 
             {/* Item description */}

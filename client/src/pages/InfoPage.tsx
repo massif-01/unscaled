@@ -3,7 +3,7 @@
  * Displays RSS feed from aihot.virxact.com with infinite scroll loading
  */
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 
@@ -23,42 +23,59 @@ const PAGE_SIZE = 10;
 export default function InfoPage() {
   const [items, setItems] = useState<RssItem[]>([]);
   const [offset, setOffset] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const loadedOffsetsRef = useRef<Set<number>>(new Set());
 
   // Fetch RSS items with pagination
-  const { data: pageItems = [], isLoading: isFetching } = trpc.rss.list.useQuery({
+  const {
+    data: pageItems,
+    isFetching,
+    isError,
+    error: queryError,
+  } = trpc.rss.list.useQuery({
     offset,
     limit: PAGE_SIZE,
   });
 
+  const isLoading = isFetching;
+
   // Load more items when page changes
   useEffect(() => {
-    if (isFetching) {
-      setIsLoading(true);
-    } else {
-      setIsLoading(false);
-      if (pageItems.length > 0) {
-        setItems((prev) => [...prev, ...pageItems]);
-        setHasMore(pageItems.length === PAGE_SIZE);
-      } else if (offset === 0) {
-        // First load returned no items
-        setHasMore(false);
-      } else {
-        // No more items
-        setHasMore(false);
-      }
+    if (isError) {
+      console.error("[RSS Query Error]", queryError);
+      setError("The latest items could not be loaded.");
+      setHasMore(false);
+      return;
     }
-  }, [pageItems, isFetching, offset]);
+
+    if (isFetching || !pageItems) return;
+
+    setError(null);
+    setHasMore(pageItems.length === PAGE_SIZE);
+
+    if (loadedOffsetsRef.current.has(offset)) {
+      return;
+    }
+
+    loadedOffsetsRef.current.add(offset);
+
+    if (pageItems.length > 0) {
+      setItems(prev => {
+        const seen = new Set(prev.map(item => item.id));
+        const nextItems = pageItems.filter(item => !seen.has(item.id));
+        return nextItems.length > 0 ? [...prev, ...nextItems] : prev;
+      });
+    }
+  }, [pageItems, isFetching, isError, queryError, offset]);
 
   // Infinite scroll observer
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => {
+      entries => {
         if (entries[0].isIntersecting && hasMore && !isLoading) {
-          setOffset((prev) => prev + PAGE_SIZE);
+          setOffset(prev => prev + PAGE_SIZE);
         }
       },
       { threshold: 0.1 }
@@ -275,14 +292,14 @@ export default function InfoPage() {
                     transition: "all 0.3s ease",
                     cursor: "pointer",
                   }}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={e => {
                     const el = e.currentTarget as HTMLElement;
                     el.style.borderColor = "oklch(0.12 0.008 60)";
                     el.style.boxShadow =
                       "0 4px 12px oklch(0.12 0.008 60 / 0.1)";
                     el.style.transform = "translateY(-2px)";
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseLeave={e => {
                     const el = e.currentTarget as HTMLElement;
                     el.style.borderColor = "oklch(0.85 0.008 65)";
                     el.style.boxShadow = "none";
