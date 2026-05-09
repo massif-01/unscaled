@@ -31,6 +31,8 @@ type DragSource = {
   y: number;
   startX: number;
   startY: number;
+  offsetX: number;
+  offsetY: number;
 };
 
 interface Particle {
@@ -79,11 +81,14 @@ const BG_COUNT = 100;
 const MAX_DIST = 140;
 const MAX_DIST_SQ = MAX_DIST * MAX_DIST;
 const NAMED_R = 5.0;
-const HIT_RADIUS_SQ = NAMED_R * 6 * (NAMED_R * 6);
+const HIT_RADIUS = NAMED_R * 6;
+const HIT_RADIUS_SQ = HIT_RADIUS * HIT_RADIUS;
+const TOUCH_HIT_RADIUS = 44;
+const TOUCH_HIT_RADIUS_SQ = TOUCH_HIT_RADIUS * TOUCH_HIT_RADIUS;
 const NAMED_LABEL_OFFSET = NAMED_R * 2.2 + 4;
 const BG_R_MIN = 0.9;
 const BG_R_MAX = 2.4;
-const MIN_RANDOM_ANCHOR_SIZE = 240;
+const MIN_RANDOM_ANCHOR_SIZE = 160;
 const RANDOM_NX_MIN = 0.28;
 const RANDOM_NX_MAX = 0.86;
 const RANDOM_NY_MIN = 0.22;
@@ -427,23 +432,27 @@ export default function SignalField({
             }
           }
         } else if (p === dragged) {
-          p.x = p.tx;
-          p.y = p.ty;
           if (dragSource) {
-            // Pointer is the force source; named anchors remain immutable.
-            for (const q of ps) {
-              if (q === p || q.isNamed || !q.entranceDone) continue;
-              const dx = q.tx + q.dispX - dragSource.x;
-              const dy = q.ty + q.dispY - dragSource.y;
-              const distSq = dx * dx + dy * dy;
-              // Early distance check: avoid sqrt if too far
-              if (distSq > REPEL_RADIUS_SQ || distSq === 0) continue;
-              const dist = Math.sqrt(distSq);
-              const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
-              // Push q away from the pointer.
-              q.velX -= (dx / dist) * force;
-              q.velY -= (dy / dist) * force;
-            }
+            p.x = dragSource.x + dragSource.offsetX;
+            p.y = dragSource.y + dragSource.offsetY;
+          } else {
+            p.x = p.tx;
+            p.y = p.ty;
+          }
+
+          // Dragged named node repels surrounding background particles.
+          for (const q of ps) {
+            if (q === p || q.isNamed || !q.entranceDone) continue;
+            const dx = q.tx + q.dispX - p.x;
+            const dy = q.ty + q.dispY - p.y;
+            const distSq = dx * dx + dy * dy;
+            // Early distance check: avoid sqrt if too far
+            if (distSq > REPEL_RADIUS_SQ || distSq === 0) continue;
+            const dist = Math.sqrt(distSq);
+            const force = (1 - dist / REPEL_RADIUS) * REPEL_STRENGTH;
+            // Push q away from the dragged node.
+            q.velX -= (dx / dist) * force;
+            q.velY -= (dy / dist) * force;
           }
         } else if (!p.isNamed) {
           // Spring back toward anchor + drift
@@ -637,15 +646,29 @@ export default function SignalField({
     return { x: clientX - rect.left, y: clientY - rect.top };
   }, []);
 
-  const findNamedAt = useCallback((cx: number, cy: number) => {
-    for (const p of particlesRef.current) {
-      if (!p.isNamed) continue;
-      const dx = p.x - cx;
-      const dy = p.y - cy;
-      if (dx * dx + dy * dy < HIT_RADIUS_SQ) return p;
-    }
-    return null;
-  }, []);
+  const findNamedAt = useCallback(
+    (cx: number, cy: number, hitRadiusSq = HIT_RADIUS_SQ) => {
+      for (const p of particlesRef.current) {
+        if (!p.isNamed) continue;
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        if (dx * dx + dy * dy < hitRadiusSq) return p;
+      }
+      return null;
+    },
+    []
+  );
+
+  const setPointerCapture = useCallback(
+    (canvas: HTMLCanvasElement, pointerId: number) => {
+      try {
+        canvas.setPointerCapture(pointerId);
+      } catch {
+        // Some mobile browsers can reject capture after gesture cancellation.
+      }
+    },
+    []
+  );
 
   const releasePointerCapture = useCallback(
     (canvas: HTMLCanvasElement, pointerId: number) => {
@@ -665,19 +688,30 @@ export default function SignalField({
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       if (!e.isPrimary) return;
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
-      const found = findNamedAt(x, y);
+      const found = findNamedAt(
+        x,
+        y,
+        e.pointerType === "touch" ? TOUCH_HIT_RADIUS_SQ : HIT_RADIUS_SQ
+      );
       if (found) {
         const canvas = e.currentTarget;
         draggedRef.current = found;
-        dragSourceRef.current = { x, y, startX: x, startY: y };
+        dragSourceRef.current = {
+          x,
+          y,
+          startX: x,
+          startY: y,
+          offsetX: found.x - x,
+          offsetY: found.y - y,
+        };
         hoveredRef.current = found;
-        canvas.setPointerCapture(e.pointerId);
+        setPointerCapture(canvas, e.pointerId);
         showTooltip(found);
         canvas.style.cursor = "grabbing";
         e.preventDefault();
       }
     },
-    [getCanvasPos, findNamedAt, showTooltip]
+    [getCanvasPos, findNamedAt, setPointerCapture, showTooltip]
   );
 
   const handlePointerMove = useCallback(
@@ -688,13 +722,22 @@ export default function SignalField({
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
 
       if (draggedRef.current) {
-        const p = draggedRef.current;
-        dragSourceRef.current = {
-          ...(dragSourceRef.current ?? { startX: x, startY: y }),
+        const fallbackSource = {
+          startX: x,
+          startY: y,
+          offsetX: 0,
+          offsetY: 0,
+        };
+        const nextDragSource = {
+          ...(dragSourceRef.current ?? fallbackSource),
           x,
           y,
         };
-        updateTooltipPosition(p.tx, p.ty);
+        dragSourceRef.current = nextDragSource;
+        updateTooltipPosition(
+          nextDragSource.x + nextDragSource.offsetX,
+          nextDragSource.y + nextDragSource.offsetY
+        );
         e.preventDefault();
         return;
       }
