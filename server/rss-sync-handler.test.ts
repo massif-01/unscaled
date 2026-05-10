@@ -4,8 +4,18 @@ import { ENV } from "./_core/env";
 import { rssSyncHandler } from "./_core/rss-sync-handler";
 import { syncRssFeed } from "./_core/rss";
 
+const sdkMocks = vi.hoisted(() => ({
+  authenticateRequest: vi.fn(),
+}));
+
 vi.mock("./_core/rss", () => ({
   syncRssFeed: vi.fn(),
+}));
+
+vi.mock("./_core/sdk", () => ({
+  sdk: {
+    authenticateRequest: sdkMocks.authenticateRequest,
+  },
 }));
 
 const originalEnv = {
@@ -51,6 +61,9 @@ beforeEach(() => {
   ENV.isProduction = true;
   ENV.rssSyncSecret = "test-secret";
   vi.mocked(syncRssFeed).mockResolvedValue({ totalItems: 1, newItems: 1 });
+  sdkMocks.authenticateRequest.mockRejectedValue(
+    new Error("missing cron cookie")
+  );
 });
 
 afterEach(() => {
@@ -91,8 +104,30 @@ describe("RSS sync scheduled handler", () => {
     });
   });
 
-  it("keeps the legacy Manus cron-header path when no secret is configured", async () => {
-    ENV.rssSyncSecret = "";
+  it("accepts Manus cron cookie auth before requiring a configured secret", async () => {
+    sdkMocks.authenticateRequest.mockResolvedValue({
+      id: -1,
+      openId: "cron_task",
+      name: "Manus Scheduled Task",
+      email: null,
+      loginMethod: null,
+      role: "user",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+      isCron: true,
+      taskUid: "task-1",
+    });
+
+    const res = createResponse();
+
+    await rssSyncHandler(createRequest(), res);
+
+    expect(syncRssFeed).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it("keeps the legacy Manus cron-header path even when a secret is configured", async () => {
     const res = createResponse();
 
     await rssSyncHandler(
@@ -102,5 +137,26 @@ describe("RSS sync scheduled handler", () => {
 
     expect(syncRssFeed).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(200);
+  });
+
+  it("rejects regular user cookies without a valid Manus cron identity", async () => {
+    ENV.rssSyncSecret = "";
+    sdkMocks.authenticateRequest.mockResolvedValue({
+      id: 1,
+      openId: "user-1",
+      name: "Regular User",
+      email: null,
+      loginMethod: null,
+      role: "user",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    });
+    const res = createResponse();
+
+    await rssSyncHandler(createRequest(), res);
+
+    expect(res.statusCode).toBe(403);
+    expect(syncRssFeed).not.toHaveBeenCalled();
   });
 });

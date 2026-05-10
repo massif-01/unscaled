@@ -7,9 +7,11 @@ import { Request, Response } from "express";
 import { timingSafeEqual } from "crypto";
 import { ENV } from "./env";
 import { syncRssFeed } from "./rss";
+import { sdk } from "./sdk";
 
 const RSS_FEED_URL = "https://aihot.virxact.com/feed.xml";
 const SECRET_HEADER = "x-rss-sync-secret";
+const MANUS_CRON_HEADER = "x-manus-cron-task-uid";
 const MAX_NEW_ITEMS_PER_SYNC = 15;
 
 function safeEquals(left: string, right: string): boolean {
@@ -34,18 +36,35 @@ function getRequestSecret(req: Request): string | undefined {
   return undefined;
 }
 
-function isAuthorizedScheduledRequest(req: Request): boolean {
-  const expectedSecret = ENV.rssSyncSecret.trim();
-  if (expectedSecret.length > 0) {
-    const providedSecret = getRequestSecret(req);
-    return providedSecret ? safeEquals(providedSecret, expectedSecret) : false;
+async function isAuthorizedManusCron(req: Request): Promise<boolean> {
+  if (req.get(MANUS_CRON_HEADER)) {
+    return true;
   }
 
-  if (!ENV.isProduction) return true;
+  try {
+    const user = await sdk.authenticateRequest(req);
+    return user.isCron === true && Boolean(user.taskUid);
+  } catch {
+    return false;
+  }
+}
 
-  // Legacy Manus Heartbeat projects can rely on the platform gateway to
-  // restrict /api/scheduled/* and forward the cron task uid.
-  return Boolean(req.get("x-manus-cron-task-uid"));
+function isAuthorizedBySecret(req: Request): boolean {
+  const expectedSecret = ENV.rssSyncSecret.trim();
+  if (expectedSecret.length === 0) {
+    return !ENV.isProduction;
+  }
+
+  const providedSecret = getRequestSecret(req);
+  return providedSecret ? safeEquals(providedSecret, expectedSecret) : false;
+}
+
+async function isAuthorizedScheduledRequest(req: Request): Promise<boolean> {
+  if (await isAuthorizedManusCron(req)) {
+    return true;
+  }
+
+  return isAuthorizedBySecret(req);
 }
 
 function errorResponse(error: unknown, req: Request) {
@@ -65,7 +84,7 @@ function errorResponse(error: unknown, req: Request) {
 
 export async function rssSyncHandler(req: Request, res: Response) {
   try {
-    if (!isAuthorizedScheduledRequest(req)) {
+    if (!(await isAuthorizedScheduledRequest(req))) {
       res.status(403).json({ error: "cron-only" });
       return;
     }

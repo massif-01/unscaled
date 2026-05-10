@@ -104,10 +104,20 @@ The Info page reads RSS items from the database. The scheduled endpoint
 `/api/scheduled/sync-rss` refreshes that table from
 `https://aihot.virxact.com/feed.xml`.
 
-For production, set `RSS_SYNC_SECRET` and send it as `x-rss-sync-secret` or as a
-JSON body `secret` field from the scheduled task. Legacy Manus cron requests are
-also accepted when `RSS_SYNC_SECRET` is unset and the platform forwards
-`x-manus-cron-task-uid`.
+In production, create a Manus Heartbeat/project-level cron that calls the path
+directly. Manus will attach the cron cookie or `x-manus-cron-task-uid`; do not
+configure this as a generic agent `curl` with only `x-rss-sync-secret`, because
+Manus blocks `/api/scheduled/*` before app code when the cron cookie is missing.
+
+If an AGENT cron must call this endpoint, use the Manus-injected cookie:
+
+```bash
+curl -X POST "$SCHEDULED_TASK_ENDPOINT_BASE/api/scheduled/sync-rss" \
+  -H "Cookie: app_session_id=$SCHEDULED_TASK_COOKIE"
+```
+
+`RSS_SYNC_SECRET` remains available as a local or non-Manus fallback, but Manus
+cron authentication is preferred.
 
 ## Design Philosophy
 
