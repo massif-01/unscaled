@@ -39,7 +39,7 @@ export default function PodcastPage() {
             position: "fixed",
             top: "clamp(1.5rem, 3vw, 2.5rem)",
             left: "clamp(2.2rem, 8vw, 7rem)",
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-wordmark)",
             fontSize: "9px",
             letterSpacing: "0.20em",
             color: "oklch(0.55 0.008 65)",
@@ -66,8 +66,8 @@ export default function PodcastPage() {
         {/* Title */}
         <h1
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontWeight: 700,
+            fontFamily: "var(--font-wordmark)",
+            fontWeight: 400,
             fontSize: "clamp(3rem, 7vw, 6.5rem)",
             lineHeight: 0.92,
             letterSpacing: "0.04em",
@@ -82,7 +82,7 @@ export default function PodcastPage() {
         {/* Subtitle */}
         <p
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontStyle: "italic",
             fontWeight: 300,
             fontSize: "clamp(1.2rem, 2.2vw, 1.6rem)",
@@ -108,7 +108,7 @@ export default function PodcastPage() {
         {/* English content */}
         <div
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
             lineHeight: 1.85,
             color: "oklch(0.35 0.008 60)",
@@ -122,15 +122,26 @@ export default function PodcastPage() {
           </p>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            In today's AI discourse, everyone speaks of scale, parameters, and computational abundance. As a co-founder of an AI inference hardware company, if I only discussed benchmarks, process nodes, and throughput—the metrics "within the scale"—I would sound like a salesman reading from a script.
+            In today's AI discourse, everyone speaks of scale, parameters, and
+            computational abundance. As a co-founder of an AI inference hardware
+            company, if I only discussed benchmarks, process nodes, and
+            throughput—the metrics "within the scale"—I would sound like a
+            salesman reading from a script.
           </p>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            "Unscaled" represents the freedom of an observer. In semiconductors, scale is process technology; in art, scale is proportion. Because we understand hardware's limits intimately, we earn the right to speak of what lies beyond—the soul of a product, the tension of creation, and the shifts in paradigm that transcend mere technical specifications.
+            "Unscaled" represents the freedom of an observer. In semiconductors,
+            scale is process technology; in art, scale is proportion. Because we
+            understand hardware's limits intimately, we earn the right to speak
+            of what lies beyond—the soul of a product, the tension of creation,
+            and the shifts in paradigm that transcend mere technical
+            specifications.
           </p>
 
           <p style={{ marginBottom: "clamp(3.5rem, 7vw, 5.5rem)" }}>
-            "Unscaled" refuses to be confined. It carries the hardness of foundational hardware and the lightness of the observer's perspective.
+            "Unscaled" refuses to be confined. It carries the hardness of
+            foundational hardware and the lightness of the observer's
+            perspective.
           </p>
         </div>
 
@@ -151,7 +162,7 @@ export default function PodcastPage() {
           rel="noopener noreferrer"
           style={{
             display: "inline-block",
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "clamp(0.75rem, 1rem, 0.9rem)",
             letterSpacing: "0.12em",
             color: "oklch(0.12 0.008 60)",
@@ -165,14 +176,15 @@ export default function PodcastPage() {
             transition: "all 0.3s ease",
             marginTop: "clamp(1rem, 2vw, 1.5rem)",
           }}
-          onMouseEnter={(e) => {
+          onMouseEnter={e => {
             (e.currentTarget as HTMLElement).style.color =
               "oklch(0.98 0.008 85)";
             (e.currentTarget as HTMLElement).style.backgroundColor =
               "oklch(0.12 0.008 60)";
-            (e.currentTarget as HTMLElement).style.transform = "translateX(2px)";
+            (e.currentTarget as HTMLElement).style.transform =
+              "translateX(2px)";
           }}
-          onMouseLeave={(e) => {
+          onMouseLeave={e => {
             (e.currentTarget as HTMLElement).style.color =
               "oklch(0.12 0.008 60)";
             (e.currentTarget as HTMLElement).style.backgroundColor =
@@ -187,7 +199,7 @@ export default function PodcastPage() {
       {/* Domain stamp */}
       <span
         style={{
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "8px",
           letterSpacing: "0.18em",
           color: "oklch(0.60 0.008 65)",

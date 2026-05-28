@@ -136,7 +136,7 @@ export default function InfoPage() {
             position: "fixed",
             top: "clamp(1.5rem, 3vw, 2.5rem)",
             left: "clamp(2.2rem, 8vw, 7rem)",
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-wordmark)",
             fontSize: "9px",
             letterSpacing: "0.20em",
             color: "oklch(0.55 0.008 65)",
@@ -162,7 +162,7 @@ export default function InfoPage() {
       >
         <h1
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontWeight: 700,
             fontSize: "clamp(2.5rem, 6vw, 5rem)",
             lineHeight: 0.95,
@@ -177,7 +177,7 @@ export default function InfoPage() {
 
         <p
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontStyle: "italic",
             fontWeight: 300,
             fontSize: "clamp(1rem, 1.8vw, 1.3rem)",
@@ -214,7 +214,7 @@ export default function InfoPage() {
             style={{
               textAlign: "center",
               padding: "clamp(2rem, 4vw, 4rem)",
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontSize: "1rem",
               color: "oklch(0.60 0.008 30)",
             }}
@@ -238,7 +238,7 @@ export default function InfoPage() {
             style={{
               textAlign: "center",
               padding: "clamp(3rem, 6vw, 5rem)",
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontSize: "1.1rem",
               color: "oklch(0.50 0.010 65)",
             }}
@@ -340,7 +340,7 @@ export default function InfoPage() {
                     {/* Chinese title */}
                     <h3
                       style={{
-                        fontFamily: "'Cormorant Garamond', Georgia, serif",
+                        fontFamily: "var(--font-display)",
                         fontSize: "clamp(1rem, 1.5vw, 1.2rem)",
                         fontWeight: 600,
                         lineHeight: 1.4,
@@ -355,7 +355,7 @@ export default function InfoPage() {
                     {item.titleEn && (
                       <p
                         style={{
-                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontFamily: "var(--font-display)",
                           fontSize: "0.9rem",
                           fontStyle: "italic",
                           lineHeight: 1.3,
@@ -371,7 +371,7 @@ export default function InfoPage() {
                     {item.description && (
                       <p
                         style={{
-                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontFamily: "var(--font-display)",
                           fontSize: "0.85rem",
                           lineHeight: 1.5,
                           color: "oklch(0.55 0.008 65)",
@@ -393,7 +393,7 @@ export default function InfoPage() {
                     {item.publishedAt && (
                       <p
                         style={{
-                          fontFamily: "'Space Mono', monospace",
+                          fontFamily: "var(--font-mono)",
                           fontSize: "0.75rem",
                           letterSpacing: "0.05em",
                           color: "oklch(0.60 0.008 65)",
@@ -427,7 +427,7 @@ export default function InfoPage() {
           {isLoading && (
             <p
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "var(--font-display)",
                 fontSize: "1rem",
                 color: "oklch(0.50 0.010 65)",
               }}
@@ -438,7 +438,7 @@ export default function InfoPage() {
           {!hasMore && items.length > 0 && (
             <p
               style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "0.75rem",
                 letterSpacing: "0.05em",
                 color: "oklch(0.60 0.008 65)",
@@ -457,7 +457,7 @@ export default function InfoPage() {
         style={{
           marginTop: "clamp(4rem, 8vw, 6rem)",
           textAlign: "center",
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "0.75rem",
           letterSpacing: "0.05em",
           color: "oklch(0.60 0.008 65)",
