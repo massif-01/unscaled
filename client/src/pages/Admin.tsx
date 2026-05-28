@@ -14,12 +14,12 @@ const S = {
   page: {
     minHeight: "100vh",
     background: "oklch(0.98 0.008 85)",
-    fontFamily: "'Space Mono', monospace",
+    fontFamily: "var(--font-mono)",
     padding: "clamp(2rem, 5vw, 4rem)",
     color: "oklch(0.15 0.008 60)",
   } as React.CSSProperties,
   heading: {
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontFamily: "var(--font-display)",
     fontWeight: 700,
     fontSize: "clamp(2rem, 4vw, 3.2rem)",
     letterSpacing: "0.04em",
@@ -27,7 +27,7 @@ const S = {
     color: "oklch(0.12 0.008 60)",
   } as React.CSSProperties,
   sub: {
-    fontFamily: "'Space Mono', monospace",
+    fontFamily: "var(--font-mono)",
     fontSize: "10px",
     letterSpacing: "0.18em",
     color: "oklch(0.55 0.008 65)",
@@ -35,7 +35,7 @@ const S = {
     marginBottom: "3rem",
   },
   sectionTitle: {
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontFamily: "var(--font-display)",
     fontWeight: 600,
     fontSize: "1.4rem",
     letterSpacing: "0.03em",
@@ -66,20 +66,20 @@ const S = {
   },
   btn: (variant: "primary" | "danger" | "ghost" = "ghost") =>
     ({
-      fontFamily: "'Space Mono', monospace",
+      fontFamily: "var(--font-mono)",
       fontSize: "9px",
       letterSpacing: "0.15em",
       textTransform: "uppercase" as const,
       padding: "5px 12px",
       border:
         variant === "primary"
-          ? "1px solid oklch(0.45 0.18 265)"
+          ? "1px solid var(--signal)"
           : variant === "danger"
             ? "1px solid oklch(0.55 0.18 25)"
             : "1px solid oklch(0.80 0.006 65)",
       background:
         variant === "primary"
-          ? "oklch(0.45 0.18 265)"
+          ? "var(--signal)"
           : variant === "danger"
             ? "oklch(0.55 0.18 25)"
             : "transparent",
@@ -92,7 +92,7 @@ const S = {
       marginRight: "6px",
     }) as React.CSSProperties,
   input: {
-    fontFamily: "'Space Mono', monospace",
+    fontFamily: "var(--font-mono)",
     fontSize: "11px",
     padding: "6px 10px",
     border: "1px solid oklch(0.82 0.006 65)",
@@ -147,12 +147,23 @@ function NodesPanel() {
   const [msg, setMsg] = useState("");
 
   const resetForm = () => {
-    setForm({ label: "", url: "", icon: "", sortOrder: "0", visible: true, posX: "", posY: "" });
+    setForm({
+      label: "",
+      url: "",
+      icon: "",
+      sortOrder: "0",
+      visible: true,
+      posX: "",
+      posY: "",
+    });
     setEditId(null);
   };
 
   const handleSubmit = async () => {
-    if (!form.label || !form.url) { setMsg("Label and URL are required."); return; }
+    if (!form.label || !form.url) {
+      setMsg("Label and URL are required.");
+      return;
+    }
     const payload = {
       label: form.label,
       url: form.url,
@@ -195,28 +206,49 @@ function NodesPanel() {
       <div style={S.sectionTitle}>Nav Nodes</div>
 
       {/* Form */}
-      <div style={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid oklch(0.90 0.006 65)", borderRadius: "4px" }}>
-        <div style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "oklch(0.50 0.008 65)", marginBottom: "10px" }}>
+      <div
+        style={{
+          marginBottom: "1.5rem",
+          padding: "1rem",
+          border: "1px solid oklch(0.90 0.006 65)",
+          borderRadius: "4px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "9px",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "oklch(0.50 0.008 65)",
+            marginBottom: "10px",
+          }}
+        >
           {editId !== null ? `Editing node #${editId}` : "Add new node"}
         </div>
         <div style={S.formRow}>
-          {(["label", "url", "icon", "sortOrder", "posX", "posY"] as const).map((f) => (
-            <div key={f}>
-              <label style={S.label}>{f}</label>
-              <input
-                style={S.input}
-                value={form[f] as string}
-                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
-                placeholder={f === "posX" || f === "posY" ? "0–1 (optional)" : ""}
-              />
-            </div>
-          ))}
+          {(["label", "url", "icon", "sortOrder", "posX", "posY"] as const).map(
+            f => (
+              <div key={f}>
+                <label style={S.label}>{f}</label>
+                <input
+                  style={S.input}
+                  value={form[f] as string}
+                  onChange={e => setForm(p => ({ ...p, [f]: e.target.value }))}
+                  placeholder={
+                    f === "posX" || f === "posY" ? "0–1 (optional)" : ""
+                  }
+                />
+              </div>
+            )
+          )}
           <div>
             <label style={S.label}>Visible</label>
             <select
               style={{ ...S.input, width: "auto" }}
               value={form.visible ? "1" : "0"}
-              onChange={(e) => setForm((p) => ({ ...p, visible: e.target.value === "1" }))}
+              onChange={e =>
+                setForm(p => ({ ...p, visible: e.target.value === "1" }))
+              }
             >
               <option value="1">Yes</option>
               <option value="0">No</option>
@@ -227,41 +259,94 @@ function NodesPanel() {
           {editId !== null ? "Update" : "Create"}
         </button>
         {editId !== null && (
-          <button style={S.btn()} onClick={resetForm}>Cancel</button>
+          <button style={S.btn()} onClick={resetForm}>
+            Cancel
+          </button>
         )}
-        {msg && <span style={{ fontSize: "10px", marginLeft: "10px", color: "oklch(0.45 0.18 265)" }}>{msg}</span>}
+        {msg && (
+          <span
+            style={{
+              fontSize: "10px",
+              marginLeft: "10px",
+              color: "var(--signal)",
+            }}
+          >
+            {msg}
+          </span>
+        )}
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div style={{ fontSize: "10px", color: "oklch(0.55 0.008 65)" }}>Loading…</div>
+        <div style={{ fontSize: "10px", color: "oklch(0.55 0.008 65)" }}>
+          Loading…
+        </div>
       ) : (
         <table style={S.table}>
           <thead>
             <tr>
-              {["ID", "Label", "URL", "Order", "Visible", "PosX", "PosY", "Actions"].map((h) => (
-                <th key={h} style={S.th}>{h}</th>
+              {[
+                "ID",
+                "Label",
+                "URL",
+                "Order",
+                "Visible",
+                "PosX",
+                "PosY",
+                "Actions",
+              ].map(h => (
+                <th key={h} style={S.th}>
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {nodes.map((n) => (
+            {nodes.map(n => (
               <tr key={n.id}>
                 <td style={S.td}>{n.id}</td>
                 <td style={S.td}>{n.label}</td>
-                <td style={{ ...S.td, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.url}</td>
+                <td
+                  style={{
+                    ...S.td,
+                    maxWidth: "200px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {n.url}
+                </td>
                 <td style={S.td}>{n.sortOrder}</td>
                 <td style={S.td}>{n.visible ? "✓" : "–"}</td>
                 <td style={S.td}>{n.posX ?? "–"}</td>
                 <td style={S.td}>{n.posY ?? "–"}</td>
                 <td style={S.td}>
-                  <button style={S.btn()} onClick={() => handleEdit(n)}>Edit</button>
-                  <button style={S.btn("danger")} onClick={() => deleteMut.mutate({ id: n.id })}>Del</button>
+                  <button style={S.btn()} onClick={() => handleEdit(n)}>
+                    Edit
+                  </button>
+                  <button
+                    style={S.btn("danger")}
+                    onClick={() => deleteMut.mutate({ id: n.id })}
+                  >
+                    Del
+                  </button>
                 </td>
               </tr>
             ))}
             {nodes.length === 0 && (
-              <tr><td colSpan={8} style={{ ...S.td, color: "oklch(0.60 0.008 65)", fontStyle: "italic" }}>No nodes yet.</td></tr>
+              <tr>
+                <td
+                  colSpan={8}
+                  style={{
+                    ...S.td,
+                    color: "oklch(0.60 0.008 65)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No nodes yet.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -302,10 +387,16 @@ function ContentPanel() {
   const [editId, setEditId] = useState<number | null>(null);
   const [msg, setMsg] = useState("");
 
-  const resetForm = () => { setForm(emptyForm); setEditId(null); };
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditId(null);
+  };
 
   const handleSubmit = async () => {
-    if (!form.category || !form.title) { setMsg("Category and title are required."); return; }
+    if (!form.category || !form.title) {
+      setMsg("Category and title are required.");
+      return;
+    }
     const payload = {
       category: form.category,
       title: form.title,
@@ -348,38 +439,66 @@ function ContentPanel() {
       <div style={S.sectionTitle}>Content Items</div>
 
       {/* Filter */}
-      <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", gap: "10px" }}>
-        <label style={{ ...S.label, marginBottom: 0 }}>Filter by category:</label>
+      <div
+        style={{
+          marginBottom: "1rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
+        <label style={{ ...S.label, marginBottom: 0 }}>
+          Filter by category:
+        </label>
         <input
           style={{ ...S.input, width: "160px" }}
           value={filterCat}
-          onChange={(e) => setFilterCat(e.target.value)}
+          onChange={e => setFilterCat(e.target.value)}
           placeholder="all"
         />
       </div>
 
       {/* Form */}
-      <div style={{ marginBottom: "1.5rem", padding: "1rem", border: "1px solid oklch(0.90 0.006 65)", borderRadius: "4px" }}>
-        <div style={{ fontSize: "9px", letterSpacing: "0.15em", textTransform: "uppercase", color: "oklch(0.50 0.008 65)", marginBottom: "10px" }}>
+      <div
+        style={{
+          marginBottom: "1.5rem",
+          padding: "1rem",
+          border: "1px solid oklch(0.90 0.006 65)",
+          borderRadius: "4px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "9px",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "oklch(0.50 0.008 65)",
+            marginBottom: "10px",
+          }}
+        >
           {editId !== null ? `Editing item #${editId}` : "Add new item"}
         </div>
         <div style={S.formRow}>
-          {(["category", "title", "url", "coverUrl", "sortOrder"] as const).map((f) => (
-            <div key={f}>
-              <label style={S.label}>{f}</label>
-              <input
-                style={S.input}
-                value={form[f] as string}
-                onChange={(e) => setForm((p) => ({ ...p, [f]: e.target.value }))}
-              />
-            </div>
-          ))}
+          {(["category", "title", "url", "coverUrl", "sortOrder"] as const).map(
+            f => (
+              <div key={f}>
+                <label style={S.label}>{f}</label>
+                <input
+                  style={S.input}
+                  value={form[f] as string}
+                  onChange={e => setForm(p => ({ ...p, [f]: e.target.value }))}
+                />
+              </div>
+            )
+          )}
           <div>
             <label style={S.label}>Visible</label>
             <select
               style={{ ...S.input, width: "auto" }}
               value={form.visible ? "1" : "0"}
-              onChange={(e) => setForm((p) => ({ ...p, visible: e.target.value === "1" }))}
+              onChange={e =>
+                setForm(p => ({ ...p, visible: e.target.value === "1" }))
+              }
             >
               <option value="1">Yes</option>
               <option value="0">No</option>
@@ -391,45 +510,95 @@ function ContentPanel() {
           <textarea
             style={{ ...S.input, minHeight: "60px", resize: "vertical" }}
             value={form.description}
-            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+            onChange={e =>
+              setForm(p => ({ ...p, description: e.target.value }))
+            }
           />
         </div>
         <button style={S.btn("primary")} onClick={handleSubmit}>
           {editId !== null ? "Update" : "Create"}
         </button>
-        {editId !== null && <button style={S.btn()} onClick={resetForm}>Cancel</button>}
-        {msg && <span style={{ fontSize: "10px", marginLeft: "10px", color: "oklch(0.45 0.18 265)" }}>{msg}</span>}
+        {editId !== null && (
+          <button style={S.btn()} onClick={resetForm}>
+            Cancel
+          </button>
+        )}
+        {msg && (
+          <span
+            style={{
+              fontSize: "10px",
+              marginLeft: "10px",
+              color: "var(--signal)",
+            }}
+          >
+            {msg}
+          </span>
+        )}
       </div>
 
       {/* Table */}
       {isLoading ? (
-        <div style={{ fontSize: "10px", color: "oklch(0.55 0.008 65)" }}>Loading…</div>
+        <div style={{ fontSize: "10px", color: "oklch(0.55 0.008 65)" }}>
+          Loading…
+        </div>
       ) : (
         <table style={S.table}>
           <thead>
             <tr>
-              {["ID", "Cat", "Title", "URL", "Order", "Vis", "Actions"].map((h) => (
-                <th key={h} style={S.th}>{h}</th>
-              ))}
+              {["ID", "Cat", "Title", "URL", "Order", "Vis", "Actions"].map(
+                h => (
+                  <th key={h} style={S.th}>
+                    {h}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
+            {items.map(item => (
               <tr key={item.id}>
                 <td style={S.td}>{item.id}</td>
                 <td style={S.td}>{item.category}</td>
                 <td style={{ ...S.td, maxWidth: "200px" }}>{item.title}</td>
-                <td style={{ ...S.td, maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.url ?? "–"}</td>
+                <td
+                  style={{
+                    ...S.td,
+                    maxWidth: "160px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {item.url ?? "–"}
+                </td>
                 <td style={S.td}>{item.sortOrder}</td>
                 <td style={S.td}>{item.visible ? "✓" : "–"}</td>
                 <td style={S.td}>
-                  <button style={S.btn()} onClick={() => handleEdit(item)}>Edit</button>
-                  <button style={S.btn("danger")} onClick={() => deleteMut.mutate({ id: item.id })}>Del</button>
+                  <button style={S.btn()} onClick={() => handleEdit(item)}>
+                    Edit
+                  </button>
+                  <button
+                    style={S.btn("danger")}
+                    onClick={() => deleteMut.mutate({ id: item.id })}
+                  >
+                    Del
+                  </button>
                 </td>
               </tr>
             ))}
             {items.length === 0 && (
-              <tr><td colSpan={7} style={{ ...S.td, color: "oklch(0.60 0.008 65)", fontStyle: "italic" }}>No items yet.</td></tr>
+              <tr>
+                <td
+                  colSpan={7}
+                  style={{
+                    ...S.td,
+                    color: "oklch(0.60 0.008 65)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No items yet.
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -445,8 +614,22 @@ export default function Admin() {
 
   if (loading) {
     return (
-      <div style={{ ...S.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase", color: "oklch(0.55 0.008 65)" }}>
+      <div
+        style={{
+          ...S.page,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <span
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "oklch(0.55 0.008 65)",
+          }}
+        >
           Loading…
         </span>
       </div>
@@ -455,14 +638,43 @@ export default function Admin() {
 
   if (!user) {
     return (
-      <div style={{ ...S.page, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "1rem" }}>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "1.8rem", color: "oklch(0.12 0.008 60)" }}>
+      <div
+        style={{
+          ...S.page,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1rem",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "1.8rem",
+            color: "oklch(0.12 0.008 60)",
+          }}
+        >
           Access Restricted
         </div>
-        <div style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "oklch(0.55 0.008 65)" }}>
+        <div
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "oklch(0.55 0.008 65)",
+          }}
+        >
           Owner login required
         </div>
-        <a href={getLoginUrl()} style={{ ...S.btn("primary"), textDecoration: "none", display: "inline-block" }}>
+        <a
+          href={getLoginUrl()}
+          style={{
+            ...S.btn("primary"),
+            textDecoration: "none",
+            display: "inline-block",
+          }}
+        >
           Sign In
         </a>
       </div>
@@ -471,8 +683,22 @@ export default function Admin() {
 
   if (user.role !== "admin") {
     return (
-      <div style={{ ...S.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontSize: "10px", letterSpacing: "0.15em", textTransform: "uppercase", color: "oklch(0.55 0.008 65)" }}>
+      <div
+        style={{
+          ...S.page,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            color: "oklch(0.55 0.008 65)",
+          }}
+        >
           Forbidden — admin only
         </div>
       </div>
@@ -481,17 +707,41 @@ export default function Admin() {
 
   return (
     <div style={S.page}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1rem",
+        }}
+      >
         <div>
-          <h1 style={S.heading}>Unscaled Admin</h1>
+          <h1 style={S.heading}>
+            <span
+              style={{ fontFamily: "var(--font-wordmark)", fontWeight: 400 }}
+            >
+              Unscaled
+            </span>{" "}
+            Admin
+          </h1>
           <div style={S.sub}>Control Panel · {user.name ?? user.email}</div>
         </div>
-        <a href="/" style={{ ...S.btn(), textDecoration: "none", display: "inline-block" }}>← Back to site</a>
+        <a
+          href="/"
+          style={{
+            ...S.btn(),
+            textDecoration: "none",
+            display: "inline-block",
+          }}
+        >
+          ← Back to site
+        </a>
       </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: "4px", marginBottom: "0.5rem" }}>
-        {(["nodes", "content"] as const).map((t) => (
+        {(["nodes", "content"] as const).map(t => (
           <button
             key={t}
             style={{

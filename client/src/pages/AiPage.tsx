@@ -74,7 +74,7 @@ export default function AiPage() {
             position: "fixed",
             top: "clamp(1.5rem, 3vw, 2.5rem)",
             left: "clamp(2.2rem, 8vw, 7rem)",
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-wordmark)",
             fontSize: "9px",
             letterSpacing: "0.20em",
             color: "oklch(0.55 0.008 65)",
@@ -92,10 +92,10 @@ export default function AiPage() {
       {/* Category label */}
       <span
         style={{
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "9px",
           letterSpacing: "0.22em",
-          color: "oklch(0.55 0.22 270)",
+          color: "var(--signal)",
           textTransform: "uppercase",
           marginBottom: "1.4rem",
           opacity: 0.8,
@@ -108,7 +108,7 @@ export default function AiPage() {
       {/* Title */}
       <h1
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-display)",
           fontWeight: 700,
           fontSize: "clamp(3rem, 7vw, 6.5rem)",
           lineHeight: 0.92,
@@ -125,7 +125,7 @@ export default function AiPage() {
       {/* Subtitle */}
       <p
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: "var(--font-display)",
           fontStyle: "italic",
           fontWeight: 300,
           fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
@@ -196,10 +196,10 @@ export default function AiPage() {
             {/* Category badge */}
             <span
               style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "8px",
                 letterSpacing: "0.20em",
-                color: "oklch(0.55 0.22 270)",
+                color: "var(--signal)",
                 textTransform: "uppercase",
                 marginBottom: "0.6rem",
                 display: "inline-block",
@@ -212,7 +212,7 @@ export default function AiPage() {
             {/* Item title */}
             <h2
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "var(--font-display)",
                 fontWeight: 700,
                 fontSize: "clamp(1.5rem, 3vw, 2.2rem)",
                 lineHeight: 1.15,
@@ -228,7 +228,7 @@ export default function AiPage() {
             {/* Item description */}
             <p
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: "var(--font-display)",
                 fontStyle: "italic",
                 fontWeight: 300,
                 fontSize: "clamp(0.95rem, 1.6vw, 1.1rem)",
@@ -248,7 +248,7 @@ export default function AiPage() {
       {/* Domain stamp */}
       <span
         style={{
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "8px",
           letterSpacing: "0.18em",
           color: "oklch(0.60 0.008 65)",

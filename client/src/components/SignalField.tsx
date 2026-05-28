@@ -95,6 +95,8 @@ const RANDOM_NY_MIN = 0.22;
 const RANDOM_NY_MAX = 0.78;
 const RANDOM_ATTEMPTS_PER_POINT = 120;
 const RANDOM_MIN_DIST_FLOOR = 56;
+const SIGNAL_RGB = "21,83,80";
+const SIGNAL_HIGHLIGHT_RGB = "128,170,162";
 
 // Repulsion physics constants
 const REPEL_RADIUS = 120; // px — how far the drag repels particles
@@ -528,13 +530,13 @@ export default function SignalField({
           const isNamedLine = a.isNamed || b.isNamed;
 
           if (isDragLine) {
-            ctx.strokeStyle = `rgba(64,64,192,${Math.min(distAlpha * 4.5, 0.85) * eo})`;
+            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${Math.min(distAlpha * 4.5, 0.85) * eo})`;
             ctx.lineWidth = 1.1;
           } else if (isHovLine) {
-            ctx.strokeStyle = `rgba(64,64,192,${Math.min(distAlpha * 3.5, 0.7) * eo})`;
+            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${Math.min(distAlpha * 3.5, 0.7) * eo})`;
             ctx.lineWidth = 0.9;
           } else if (isNamedLine) {
-            ctx.strokeStyle = `rgba(64,64,192,${distAlpha * 0.55 * eo})`;
+            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${distAlpha * 0.55 * eo})`;
             ctx.lineWidth = 0.5;
           } else {
             ctx.strokeStyle = `rgba(190,182,170,${distAlpha * eo})`;
@@ -566,9 +568,12 @@ export default function SignalField({
           // Outer glow — larger when dragging
           const glowR = r * (isDrag ? 7.0 : isHov ? 5.5 : 4.0);
           const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-          grd.addColorStop(0, `rgba(64,64,192,${fo * (isDrag ? 0.38 : 0.28)})`);
-          grd.addColorStop(0.45, `rgba(64,64,192,${fo * 0.07})`);
-          grd.addColorStop(1, `rgba(64,64,192,0)`);
+          grd.addColorStop(
+            0,
+            `rgba(${SIGNAL_RGB},${fo * (isDrag ? 0.38 : 0.28)})`
+          );
+          grd.addColorStop(0.45, `rgba(${SIGNAL_RGB},${fo * 0.07})`);
+          grd.addColorStop(1, `rgba(${SIGNAL_RGB},0)`);
           ctx.beginPath();
           ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
           ctx.fillStyle = grd;
@@ -577,28 +582,28 @@ export default function SignalField({
           // Core
           ctx.beginPath();
           ctx.arc(p.x, p.y, r * (isDrag ? 1.35 : 1), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(64,64,192,${fo})`;
+          ctx.fillStyle = `rgba(${SIGNAL_RGB},${fo})`;
           ctx.fill();
 
           // Highlight
           ctx.beginPath();
           ctx.arc(p.x - r * 0.28, p.y - r * 0.28, r * 0.32, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(180,180,255,${fo * 0.55})`;
+          ctx.fillStyle = `rgba(${SIGNAL_HIGHLIGHT_RGB},${fo * 0.55})`;
           ctx.fill();
 
           // Ripple
           if (p.rippleActive) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.rippleRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(64,64,192,${p.rippleOpacity * eo})`;
+            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${p.rippleOpacity * eo})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
 
           // Micro-label (hidden while dragging to avoid overlap with DOM tooltip)
           if (eo > 0.6 && !isHov && !isDrag) {
-            ctx.font = `400 9px 'Space Mono', monospace`;
-            ctx.fillStyle = `rgba(64,64,192,${fo * 0.55})`;
+            ctx.font = "500 9px Montserrat, sans-serif";
+            ctx.fillStyle = `rgba(${SIGNAL_RGB},${fo * 0.55})`;
             ctx.textAlign = "center";
             ctx.fillText(
               p.node!.label.toUpperCase(),
@@ -847,10 +852,10 @@ export default function SignalField({
           top: 0,
           transform: `translate3d(${tooltipPosRef.current.x}px, ${tooltipPosRef.current.y - 34}px, 0) translateX(-50%)`,
           pointerEvents: "none",
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "11px",
           letterSpacing: "0.15em",
-          color: "oklch(0.42 0.22 270)",
+          color: "var(--signal)",
           opacity: tooltip.visible ? 1 : 0,
           transition: "opacity 0.15s ease",
           userSelect: "none",

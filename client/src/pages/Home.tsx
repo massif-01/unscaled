@@ -137,9 +137,12 @@ export default function Home() {
   // Mobile: wordmark 42vw | desktop: wordmark 46%
   const wordmarkWidth = isMobile ? "42vw" : "46%";
   const wordmarkPadLeft = isMobile
-    ? "clamp(1.2rem, 4vw, 1.8rem)"
-    : "clamp(3.2rem, 7vw, 6.5rem)";
+    ? "clamp(1.44rem, 4.8vw, 2.16rem)"
+    : "clamp(3.84rem, 8.4vw, 7.8rem)";
   const wordmarkPadRight = isMobile ? "0.6rem" : "1.2rem";
+  const metaLeft = isMobile
+    ? "clamp(2.16rem, 7.8vw, 3.36rem)"
+    : "clamp(3.84rem, 8.4vw, 7.8rem)";
   const h1FontSize = isMobile
     ? "clamp(2.2rem, 9vw, 3.4rem)"
     : "clamp(3.8rem, 6.5vw, 8rem)";
@@ -191,18 +194,29 @@ export default function Home() {
         >
           <h1
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "flex-end",
+              fontFamily: "var(--font-wordmark)",
+              fontWeight: 400,
               fontSize: h1FontSize,
               lineHeight: 0.92,
-              letterSpacing: "0.04em",
+              letterSpacing: 0,
               color: "oklch(0.12 0.008 60)",
-              margin: 0,
+              margin: "0 0 0 -0.12em",
               padding: 0,
               whiteSpace: "nowrap",
             }}
           >
-            Unscaled
+            <span style={{ transform: "translateY(0.024em)" }}>U</span>
+            <span
+              style={{
+                fontSize: "0.85em",
+                letterSpacing: "0.035em",
+                lineHeight: 0.92,
+              }}
+            >
+              nscaled
+            </span>
           </h1>
         </div>
 
@@ -217,8 +231,8 @@ export default function Home() {
         >
           <p
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontStyle: "italic",
+              fontFamily: "var(--font-display)",
+              fontStyle: "normal",
               fontWeight: 300,
               fontSize: taglineFontSize,
               letterSpacing: "0.015em",
@@ -258,7 +272,7 @@ export default function Home() {
           >
             <span
               style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "clamp(8px, 0.85vw, 10px)",
                 letterSpacing: "0.18em",
                 color: "oklch(0.60 0.008 65)",
@@ -272,21 +286,6 @@ export default function Home() {
           </div>
         )}
       </div>
-
-      {/* ── Vertical Divider ─────────────────────────────────────────────── */}
-      {/* Positioned at the right edge of the wordmark column, always visible */}
-      <div
-        style={{
-          width: "1px",
-          height: isMobile ? "28%" : "35%",
-          alignSelf: "center",
-          background:
-            "linear-gradient(to bottom, transparent, oklch(0.80 0.006 65) 25%, oklch(0.80 0.006 65) 75%, transparent)",
-          flexShrink: 0,
-          opacity: mounted ? 0.65 : 0,
-          transition: "opacity 2s ease 0.5s",
-        }}
-      />
 
       {/* ── Signal Field ─────────────────────────────────────────────────── */}
       <div
@@ -308,10 +307,8 @@ export default function Home() {
         style={{
           position: "absolute",
           bottom: isMobile ? "0.6rem" : "clamp(1.2rem, 2.5vw, 2rem)",
-          left: isMobile
-            ? "clamp(1.8rem, 6.5vw, 2.8rem)"
-            : "clamp(3.2rem, 7vw, 6.5rem)",
-          fontFamily: "'Space Mono', monospace",
+          left: metaLeft,
+          fontFamily: "var(--font-mono)",
           fontSize: "7px",
           letterSpacing: "0.18em",
           color: "oklch(0.68 0.006 65)",
@@ -337,8 +334,8 @@ function HoverHint({ isMobile }: { isMobile: boolean }) {
       style={{
         position: "absolute",
         bottom: isMobile ? "0.6rem" : "clamp(1.2rem, 2.5vw, 2rem)",
-        right: isMobile ? "0.6rem" : "clamp(1.5rem, 3vw, 2.5rem)",
-        fontFamily: "'Space Mono', monospace",
+        right: isMobile ? "0.78rem" : "clamp(1.95rem, 3.9vw, 3.25rem)",
+        fontFamily: "var(--font-mono)",
         fontSize: "7px",
         letterSpacing: "0.16em",
         color: "oklch(0.60 0.008 65)",

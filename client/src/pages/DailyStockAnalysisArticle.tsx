@@ -36,7 +36,7 @@ export default function DailyStockAnalysisArticle() {
             position: "fixed",
             top: "clamp(1.5rem, 3vw, 2.5rem)",
             left: "clamp(2.2rem, 8vw, 7rem)",
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "var(--font-mono)",
             fontSize: "9px",
             letterSpacing: "0.20em",
             color: "oklch(0.55 0.008 65)",
@@ -61,7 +61,7 @@ export default function DailyStockAnalysisArticle() {
         {/* Title */}
         <h1
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontWeight: 700,
             fontSize: "clamp(2.5rem, 6vw, 5rem)",
             lineHeight: 0.95,
@@ -78,7 +78,7 @@ export default function DailyStockAnalysisArticle() {
         {/* Subtitle */}
         <p
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontStyle: "italic",
             fontWeight: 300,
             fontSize: "clamp(1rem, 1.8vw, 1.25rem)",
@@ -88,7 +88,8 @@ export default function DailyStockAnalysisArticle() {
             margin: "0 0 clamp(2rem, 4vw, 3rem) 0",
           }}
         >
-          Intelligent stock analysis powered by large language models. Automated decision dashboards for global markets.
+          Intelligent stock analysis powered by large language models. Automated
+          decision dashboards for global markets.
         </p>
 
         {/* Hairline */}
@@ -104,7 +105,7 @@ export default function DailyStockAnalysisArticle() {
         {/* Article body */}
         <div
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontFamily: "var(--font-display)",
             fontSize: "clamp(1rem, 1.6vw, 1.15rem)",
             lineHeight: 1.8,
             color: "oklch(0.35 0.008 60)",
@@ -112,16 +113,26 @@ export default function DailyStockAnalysisArticle() {
           }}
         >
           <p style={{ marginBottom: "1.8rem" }}>
-            In the age of information overload, stock market analysis has become increasingly complex. Traditional approaches struggle to synthesize real-time quotes, technical patterns, news sentiment, and fundamental metrics into coherent investment decisions. <strong>Daily Stock Analysis</strong> reimagines this workflow through the lens of artificial intelligence.
+            In the age of information overload, stock market analysis has become
+            increasingly complex. Traditional approaches struggle to synthesize
+            real-time quotes, technical patterns, news sentiment, and
+            fundamental metrics into coherent investment decisions.{" "}
+            <strong>Daily Stock Analysis</strong> reimagines this workflow
+            through the lens of artificial intelligence.
           </p>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            Built on large language models, this system automates the daily ritual of market surveillance across A-shares, Hong Kong stocks, and US equities. Rather than drowning in data, investors receive a crystalline <strong>decision dashboard</strong>—a one-sentence thesis, a conviction score, precise entry/exit levels, risk alerts, and an actionable checklist. The system distills chaos into clarity.
+            Built on large language models, this system automates the daily
+            ritual of market surveillance across A-shares, Hong Kong stocks, and
+            US equities. Rather than drowning in data, investors receive a
+            crystalline <strong>decision dashboard</strong>—a one-sentence
+            thesis, a conviction score, precise entry/exit levels, risk alerts,
+            and an actionable checklist. The system distills chaos into clarity.
           </p>
 
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)",
               lineHeight: 1.3,
@@ -135,12 +146,18 @@ export default function DailyStockAnalysisArticle() {
           </h2>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            The analysis engine integrates multiple data streams: technical indicators, real-time market microstructure, chip distribution patterns, news sentiment, earnings guidance, capital flows, and macroeconomic fundamentals. Each dimension feeds into the AI's reasoning, creating a holistic view that no single metric can provide. The system doesn't just report—it synthesizes, weighs, and decides.
+            The analysis engine integrates multiple data streams: technical
+            indicators, real-time market microstructure, chip distribution
+            patterns, news sentiment, earnings guidance, capital flows, and
+            macroeconomic fundamentals. Each dimension feeds into the AI's
+            reasoning, creating a holistic view that no single metric can
+            provide. The system doesn't just report—it synthesizes, weighs, and
+            decides.
           </p>
 
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)",
               lineHeight: 1.3,
@@ -154,12 +171,17 @@ export default function DailyStockAnalysisArticle() {
           </h2>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            Eleven quantitative strategies are embedded into the system: moving average crossovers, Chan theory, Elliott waves, regime detection, emotional cycles, and more. Rather than forcing a one-size-fits-all approach, the AI selects and applies strategies contextually. A trending market calls for momentum; a mean-reverting market demands oscillator wisdom. The system adapts.
+            Eleven quantitative strategies are embedded into the system: moving
+            average crossovers, Chan theory, Elliott waves, regime detection,
+            emotional cycles, and more. Rather than forcing a one-size-fits-all
+            approach, the AI selects and applies strategies contextually. A
+            trending market calls for momentum; a mean-reverting market demands
+            oscillator wisdom. The system adapts.
           </p>
 
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)",
               lineHeight: 1.3,
@@ -173,12 +195,17 @@ export default function DailyStockAnalysisArticle() {
           </h2>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            Deployment is frictionless. Run it on GitHub Actions—no server required, no monthly bills. The system executes on schedule, analyzing your watchlist every trading day at 6 PM Beijing time. Results flow through your preferred channels: WeChat, Feishu, Telegram, Discord, Slack, or email. The infrastructure disappears; only insights remain.
+            Deployment is frictionless. Run it on GitHub Actions—no server
+            required, no monthly bills. The system executes on schedule,
+            analyzing your watchlist every trading day at 6 PM Beijing time.
+            Results flow through your preferred channels: WeChat, Feishu,
+            Telegram, Discord, Slack, or email. The infrastructure disappears;
+            only insights remain.
           </p>
 
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: "clamp(1.4rem, 2.5vw, 1.8rem)",
               lineHeight: 1.3,
@@ -192,11 +219,20 @@ export default function DailyStockAnalysisArticle() {
           </h2>
 
           <p style={{ marginBottom: "1.8rem" }}>
-            Every analysis is testable. The system generates historical reports and validates past recommendations against actual market outcomes. Accuracy rates and simulated returns are transparent. This isn't black-box magic—it's auditable intelligence. You can see where the system succeeded and where it stumbled.
+            Every analysis is testable. The system generates historical reports
+            and validates past recommendations against actual market outcomes.
+            Accuracy rates and simulated returns are transparent. This isn't
+            black-box magic—it's auditable intelligence. You can see where the
+            system succeeded and where it stumbled.
           </p>
 
           <p style={{ marginBottom: "clamp(3rem, 6vw, 5rem)" }}>
-            In a world of noise, <strong>Daily Stock Analysis</strong> is a signal generator. It transforms raw market data into actionable intelligence, powered by the reasoning capacity of large language models. For traders, portfolio managers, and serious investors, it's a tool that scales human judgment across global markets, every single day.
+            In a world of noise, <strong>Daily Stock Analysis</strong> is a
+            signal generator. It transforms raw market data into actionable
+            intelligence, powered by the reasoning capacity of large language
+            models. For traders, portfolio managers, and serious investors, it's
+            a tool that scales human judgment across global markets, every
+            single day.
           </p>
 
           {/* CTA Button */}
@@ -206,7 +242,7 @@ export default function DailyStockAnalysisArticle() {
             rel="noopener noreferrer"
             style={{
               display: "inline-block",
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "clamp(0.75rem, 1rem, 0.9rem)",
               letterSpacing: "0.12em",
               color: "oklch(0.12 0.008 60)",
@@ -220,19 +256,21 @@ export default function DailyStockAnalysisArticle() {
               transition: "all 0.3s ease",
               marginTop: "clamp(1rem, 2vw, 1.5rem)",
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={e => {
               (e.currentTarget as HTMLElement).style.color =
                 "oklch(0.98 0.008 85)";
               (e.currentTarget as HTMLElement).style.backgroundColor =
                 "oklch(0.12 0.008 60)";
-              (e.currentTarget as HTMLElement).style.transform = "translateX(2px)";
+              (e.currentTarget as HTMLElement).style.transform =
+                "translateX(2px)";
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={e => {
               (e.currentTarget as HTMLElement).style.color =
                 "oklch(0.12 0.008 60)";
               (e.currentTarget as HTMLElement).style.backgroundColor =
                 "transparent";
-              (e.currentTarget as HTMLElement).style.transform = "translateX(0)";
+              (e.currentTarget as HTMLElement).style.transform =
+                "translateX(0)";
             }}
           >
             View on GitHub →
@@ -243,7 +281,7 @@ export default function DailyStockAnalysisArticle() {
       {/* Domain stamp */}
       <span
         style={{
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "8px",
           letterSpacing: "0.18em",
           color: "oklch(0.60 0.008 65)",
