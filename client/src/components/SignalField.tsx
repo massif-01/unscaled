@@ -98,10 +98,9 @@ const RANDOM_ATTEMPTS_PER_POINT = 120;
 const RANDOM_MIN_DIST_FLOOR = 56;
 const SIGNAL_RGB = "21,83,80";
 const SIGNAL_HIGHLIGHT_RGB = "128,170,162";
-// Star effect: pure white core + blue-purple nebula halo
-const STAR_CORE_RGB = "248,246,242";
-const STAR_NEBULA_RGB = "120,100,200";
-const STAR_NEBULA_MID_RGB = "150,130,220";
+// Named-node signal: green point with green interaction ripple
+const STAR_CORE_RGB = "21,83,80";
+const STAR_RIPPLE_RGB = "31,109,98";
 
 // Repulsion physics constants
 const REPEL_RADIUS = 120; // px — how far the drag repels particles
@@ -571,31 +570,15 @@ export default function SignalField({
           const base = isHov || isDrag ? 1 : 0.85;
           const fo = base * eo;
 
-          // Nebula halo — wide blue-purple radial gradient
-          const nebulaR = r * (isDrag ? 10.0 : isHov ? 8.0 : 6.5);
-          const nebula = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, nebulaR);
-          nebula.addColorStop(0, `rgba(${STAR_NEBULA_RGB},${fo * (isDrag ? 0.14 : 0.10)})`);
-          nebula.addColorStop(0.35, `rgba(${STAR_NEBULA_MID_RGB},${fo * 0.05})`);
-          nebula.addColorStop(0.65, `rgba(${STAR_NEBULA_RGB},${fo * 0.02})`)
-          nebula.addColorStop(1, `rgba(${STAR_NEBULA_RGB},0)`);
+          // Core signal point, no ambient glow
           ctx.beginPath();
-          ctx.arc(p.x, p.y, nebulaR, 0, Math.PI * 2);
-          ctx.fillStyle = nebula;
-          ctx.fill();
-
-          // Inner blue-purple tight glow
-          const innerGlowR = r * (isDrag ? 3.5 : isHov ? 2.8 : 2.2);
-          const innerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, innerGlowR);
-          innerGlow.addColorStop(0, `rgba(${STAR_NEBULA_RGB},${fo * 0.22})`);
-          innerGlow.addColorStop(1, `rgba(${STAR_NEBULA_RGB},0)`);
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, innerGlowR, 0, Math.PI * 2);
-          ctx.fillStyle = innerGlow;
-          ctx.fill();
-
-          // Core — pure white, 40% of original radius
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, r * (isDrag ? 0.54 : 0.4), 0, Math.PI * 2);
+          ctx.arc(
+            p.x,
+            p.y,
+            r * (isDrag ? 0.72 : isHov ? 0.64 : 0.56),
+            0,
+            Math.PI * 2
+          );
           ctx.fillStyle = `rgba(${STAR_CORE_RGB},${fo})`;
           ctx.fill();
 
@@ -603,7 +586,7 @@ export default function SignalField({
           if (p.rippleActive) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.rippleRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(160,155,148,${p.rippleOpacity * eo})`;
+            ctx.strokeStyle = `rgba(${STAR_RIPPLE_RGB},${p.rippleOpacity * eo})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
