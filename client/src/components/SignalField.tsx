@@ -98,6 +98,10 @@ const RANDOM_ATTEMPTS_PER_POINT = 120;
 const RANDOM_MIN_DIST_FLOOR = 56;
 const SIGNAL_RGB = "21,83,80";
 const SIGNAL_HIGHLIGHT_RGB = "128,170,162";
+// Star effect: pure white core + blue-purple nebula halo
+const STAR_CORE_RGB = "248,246,242";
+const STAR_NEBULA_RGB = "120,100,200";
+const STAR_NEBULA_MID_RGB = "150,130,220";
 
 // Repulsion physics constants
 const REPEL_RADIUS = 120; // px — how far the drag repels particles
@@ -532,13 +536,13 @@ export default function SignalField({
           const isNamedLine = a.isNamed || b.isNamed;
 
           if (isDragLine) {
-            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${Math.min(distAlpha * 4.5, 0.85) * eo})`;
+            ctx.strokeStyle = `rgba(160,155,148,${Math.min(distAlpha * 4.5, 0.65) * eo})`;
             ctx.lineWidth = 1.1;
           } else if (isHovLine) {
-            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${Math.min(distAlpha * 3.5, 0.7) * eo})`;
+            ctx.strokeStyle = `rgba(160,155,148,${Math.min(distAlpha * 3.5, 0.45) * eo})`;
             ctx.lineWidth = 0.9;
           } else if (isNamedLine) {
-            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${distAlpha * 0.55 * eo})`;
+            ctx.strokeStyle = `rgba(160,155,148,${distAlpha * 0.45 * eo})`;
             ctx.lineWidth = 0.5;
           } else {
             ctx.strokeStyle = `rgba(190,182,170,${distAlpha * eo})`;
@@ -567,30 +571,32 @@ export default function SignalField({
           const base = isHov || isDrag ? 1 : 0.85;
           const fo = base * eo;
 
-          // Outer glow — larger when dragging
-          const glowR = r * (isDrag ? 7.0 : isHov ? 5.5 : 4.0);
-          const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-          grd.addColorStop(
-            0,
-            `rgba(${SIGNAL_RGB},${fo * (isDrag ? 0.38 : 0.28)})`
-          );
-          grd.addColorStop(0.45, `rgba(${SIGNAL_RGB},${fo * 0.07})`);
-          grd.addColorStop(1, `rgba(${SIGNAL_RGB},0)`);
+          // Nebula halo — wide blue-purple radial gradient
+          const nebulaR = r * (isDrag ? 10.0 : isHov ? 8.0 : 6.5);
+          const nebula = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, nebulaR);
+          nebula.addColorStop(0, `rgba(${STAR_NEBULA_RGB},${fo * (isDrag ? 0.14 : 0.10)})`);
+          nebula.addColorStop(0.35, `rgba(${STAR_NEBULA_MID_RGB},${fo * 0.05})`);
+          nebula.addColorStop(0.65, `rgba(${STAR_NEBULA_RGB},${fo * 0.02})`)
+          nebula.addColorStop(1, `rgba(${STAR_NEBULA_RGB},0)`);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-          ctx.fillStyle = grd;
+          ctx.arc(p.x, p.y, nebulaR, 0, Math.PI * 2);
+          ctx.fillStyle = nebula;
           ctx.fill();
 
-          // Core
+          // Inner blue-purple tight glow
+          const innerGlowR = r * (isDrag ? 3.5 : isHov ? 2.8 : 2.2);
+          const innerGlow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, innerGlowR);
+          innerGlow.addColorStop(0, `rgba(${STAR_NEBULA_RGB},${fo * 0.22})`);
+          innerGlow.addColorStop(1, `rgba(${STAR_NEBULA_RGB},0)`);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, r * (isDrag ? 1.35 : 1), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${SIGNAL_RGB},${fo})`;
+          ctx.arc(p.x, p.y, innerGlowR, 0, Math.PI * 2);
+          ctx.fillStyle = innerGlow;
           ctx.fill();
 
-          // Highlight
+          // Core — pure white, 40% of original radius
           ctx.beginPath();
-          ctx.arc(p.x - r * 0.28, p.y - r * 0.28, r * 0.32, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${SIGNAL_HIGHLIGHT_RGB},${fo * 0.55})`;
+          ctx.arc(p.x, p.y, r * (isDrag ? 0.54 : 0.4), 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${STAR_CORE_RGB},${fo})`;
           ctx.fill();
 
           // Ripple
@@ -605,7 +611,7 @@ export default function SignalField({
           // Micro-label (hidden while dragging to avoid overlap with DOM tooltip)
           if (eo > 0.6 && !isHov && !isDrag) {
             ctx.font = "500 9px Montserrat, sans-serif";
-            ctx.fillStyle = `rgba(${SIGNAL_RGB},${fo * 0.55})`;
+            ctx.fillStyle = `rgba(160,155,148,${fo * 0.75})`;
             ctx.textAlign = "center";
             ctx.fillText(
               p.node!.label.toUpperCase(),
