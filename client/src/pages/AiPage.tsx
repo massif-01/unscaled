@@ -35,13 +35,7 @@ const aiItems: AIItem[] = [
     url: "/ai/daily-stock-analysis",
     category: "Quant",
   },
-  {
-    title: "Qwen 3.6 Benchmark Explorer",
-    description:
-      "Performance comparison across 12 AI evaluation sets. Qwen3.6-27B vs mainstream models on agentic coding, reasoning, and multimodal tasks.",
-    url: "https://qwen.unscaled.me",
-    category: "Benchmark",
-  },
+
 ];
 
 export default function AiPage() {
