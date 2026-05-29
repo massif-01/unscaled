@@ -603,7 +603,7 @@ export default function SignalField({
           if (p.rippleActive) {
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.rippleRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(${SIGNAL_RGB},${p.rippleOpacity * eo})`;
+            ctx.strokeStyle = `rgba(160,155,148,${p.rippleOpacity * eo})`;
             ctx.lineWidth = 1;
             ctx.stroke();
           }
@@ -870,7 +870,7 @@ export default function SignalField({
           fontFamily: "var(--font-mono)",
           fontSize: "11px",
           letterSpacing: "0.15em",
-          color: "var(--signal)",
+          color: "rgba(130,125,118,0.9)",
           opacity: tooltip.visible ? 1 : 0,
           transition: "opacity 0.15s ease",
           userSelect: "none",
