@@ -10,6 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "wouter";
 
 export interface NavNode {
   id: string;
@@ -185,6 +186,7 @@ export default function SignalField({
   nodes,
   positionMode = "configured",
 }: SignalFieldProps) {
+  const [, setLocation] = useLocation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const namedAnchorsRef = useRef<NamedAnchor[] | null>(null);
@@ -787,7 +789,14 @@ export default function SignalField({
 
         if (moved < (e.pointerType === "touch" ? 10 : 8)) {
           // Treat as click — navigate
-          window.location.href = wasDragged.node!.url;
+          const url = wasDragged.node!.url;
+          if (url.startsWith("/")) {
+            // Internal route — use wouter
+            setLocation(url);
+          } else {
+            // External link — use window.location
+            window.location.href = url;
+          }
         }
         hideTooltip();
       }
