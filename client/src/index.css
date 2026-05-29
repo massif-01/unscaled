@@ -160,6 +160,14 @@
     box-sizing: border-box;
   }
 
+  /* Remove border from images and favicons */
+  img,
+  svg,
+  link[rel="icon"],
+  link[rel="apple-touch-icon"] {
+    border: none !important;
+  }
+
   html,
   body {
     width: 100%;
