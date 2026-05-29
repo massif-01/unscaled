@@ -15,20 +15,6 @@ interface AIItem {
 
 const aiItems: AIItem[] = [
   {
-    title: "Qwen 3.6 Benchmark Explorer",
-    description:
-      "Performance comparison across 12 AI evaluation sets. Qwen3.6-27B vs mainstream models on agentic coding, reasoning, and multimodal tasks.",
-    url: "https://qwen.unscaled.me",
-    category: "Benchmark",
-  },
-  {
-    title: "Daily Stock Analysis",
-    description:
-      "LLM-powered intelligent stock analyzer for A/H/US markets. Automated decision dashboards with multi-dimensional analysis: technical patterns, real-time quotes, fund flows, news sentiment, and AI-driven insights. Supports 11 built-in strategies, backtesting, and multi-channel notifications via WeChat, Feishu, Telegram, Discord, Slack, and email. Zero-cost execution on GitHub Actions or Docker.",
-    url: "/ai/daily-stock-analysis",
-    category: "Quant",
-  },
-  {
     title: "AuraCap",
     description:
       "The first open-source project using GitHub Release as transient middleware. iOS Shortcuts capture screenshots/recordings → Release Assets → GitHub Actions AI processing → structured Markdown timeline. Zero infrastructure cost, zero webhooks, zero S3. Fork the repo, configure AI secrets, deploy instantly. Your data stays within GitHub's security boundary.",
@@ -41,6 +27,20 @@ const aiItems: AIItem[] = [
       "Ultra-minimal AI chat UI: 30-second Docker deployment, zero registration, OpenAI-compatible. Supports any model (Ollama, vLLM, LocalAI, LM Studio). Multi-model configuration, document parsing, vision AI, thinking mode, plugin ecosystem. Lightweight (60MB), responsive design, perfect Lighthouse scores.",
     url: "/ai/chatraw",
     category: "Interface",
+  },
+  {
+    title: "Daily Stock Analysis",
+    description:
+      "LLM-powered intelligent stock analyzer for A/H/US markets. Automated decision dashboards with multi-dimensional analysis: technical patterns, real-time quotes, fund flows, news sentiment, and AI-driven insights. Supports 11 built-in strategies, backtesting, and multi-channel notifications via WeChat, Feishu, Telegram, Discord, Slack, and email. Zero-cost execution on GitHub Actions or Docker.",
+    url: "/ai/daily-stock-analysis",
+    category: "Quant",
+  },
+  {
+    title: "Qwen 3.6 Benchmark Explorer",
+    description:
+      "Performance comparison across 12 AI evaluation sets. Qwen3.6-27B vs mainstream models on agentic coding, reasoning, and multimodal tasks.",
+    url: "https://qwen.unscaled.me",
+    category: "Benchmark",
   },
 ];
 
