@@ -156,8 +156,28 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply outline-ring/50;
     box-sizing: border-box;
+  }
+
+  /* Apply border only to interactive elements, not images */
+  button,
+  input,
+  select,
+  textarea,
+  a,
+  div,
+  span,
+  p {
+    @apply border-border;
+  }
+
+  /* Exclude images and favicons from border */
+  img,
+  svg,
+  link[rel="icon"],
+  link[rel="apple-touch-icon"] {
+    border: none !important;
   }
 
   html,

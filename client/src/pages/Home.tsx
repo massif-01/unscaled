@@ -190,8 +190,21 @@ export default function Home() {
             transform: mounted ? "translateY(0px)" : "translateY(16px)",
             transition:
               "opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1), transform 1.4s cubic-bezier(0.16, 1, 0.3, 1)",
+            display: "flex",
+            alignItems: "flex-end",
+            gap: "0.8rem",
           }}
         >
+          {/* Logo */}
+          <img
+            src="/unscaled-logo-hd.png"
+            alt="Unscaled Logo"
+            style={{
+              width: "clamp(2.5rem, 5vw, 4rem)",
+              height: "clamp(2.5rem, 5vw, 4rem)",
+              flexShrink: 0,
+            }}
+          />
           <h1
             style={{
               display: "inline-flex",
