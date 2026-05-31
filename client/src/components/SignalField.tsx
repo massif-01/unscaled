@@ -6,6 +6,7 @@
  * - Named nodes: pulse, permanent micro-labels, hover ripple
  * - Drag from named nodes (mouse + touch): anchors stay fixed while
  *   surrounding particles are repelled by the pointer
+ * - Background particles respond to light mouse-pass disturbance
  * - ~25% background particles drift with slow sinusoidal breathing
  */
 
@@ -34,6 +35,18 @@ type DragSource = {
   startY: number;
   offsetX: number;
   offsetY: number;
+};
+
+type PointerDisturbance = {
+  active: boolean;
+  hasLast: boolean;
+  x: number;
+  y: number;
+  lastX: number;
+  lastY: number;
+  vx: number;
+  vy: number;
+  strength: number;
 };
 
 interface Particle {
@@ -109,6 +122,14 @@ const REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS;
 const REPEL_STRENGTH = 0.9; // force multiplier
 const SPRING_K = 0.055; // spring stiffness for return
 const DAMPING = 0.78; // velocity damping (0–1)
+const POINTER_DISTURB_RADIUS = 128;
+const POINTER_DISTURB_RADIUS_SQ =
+  POINTER_DISTURB_RADIUS * POINTER_DISTURB_RADIUS;
+const POINTER_DISTURB_STRENGTH = 0.86;
+const POINTER_DISTURB_SWEEP_BIAS = 0.62;
+const POINTER_DISTURB_DECAY = 0.88;
+const POINTER_DISTURB_MIN_STRENGTH = 0.015;
+const POINTER_DISTURB_MAX_SPEED = 38;
 const NAMED_RETURN_SPRING_K = 0.075;
 const NAMED_RETURN_DAMPING = 0.64;
 const NAMED_RETURN_SNAP_DISTANCE = 0.45;
@@ -206,6 +227,17 @@ export default function SignalField({
   const hoveredRef = useRef<Particle | null>(null);
   const draggedRef = useRef<Particle | null>(null);
   const dragSourceRef = useRef<DragSource | null>(null);
+  const pointerDisturbanceRef = useRef<PointerDisturbance>({
+    active: false,
+    hasLast: false,
+    x: 0,
+    y: 0,
+    lastX: 0,
+    lastY: 0,
+    vx: 0,
+    vy: 0,
+    strength: 0,
+  });
   const activePointerIdRef = useRef<number | null>(null);
   const sizeRef = useRef({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -436,6 +468,11 @@ export default function SignalField({
       const ps = particlesRef.current;
       const dragged = draggedRef.current;
       const dragSource = dragSourceRef.current;
+      const pointerDisturbance = pointerDisturbanceRef.current;
+      const hasPointerDisturbance =
+        !dragged &&
+        pointerDisturbance.active &&
+        pointerDisturbance.strength > POINTER_DISTURB_MIN_STRENGTH;
 
       // ── Update ──────────────────────────────────────────────────────────
       for (const p of ps) {
@@ -478,6 +515,39 @@ export default function SignalField({
             q.velY -= (dy / dist) * force;
           }
         } else if (!p.isNamed) {
+          if (hasPointerDisturbance) {
+            const dx = p.tx + p.dispX - pointerDisturbance.x;
+            const dy = p.ty + p.dispY - pointerDisturbance.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < POINTER_DISTURB_RADIUS_SQ && distSq > 0.001) {
+              const dist = Math.sqrt(distSq);
+              const falloff = 1 - dist / POINTER_DISTURB_RADIUS;
+              const force =
+                falloff *
+                falloff *
+                POINTER_DISTURB_STRENGTH *
+                pointerDisturbance.strength;
+              const invDist = 1 / dist;
+              const pointerSpeed = Math.max(
+                1,
+                Math.sqrt(
+                  pointerDisturbance.vx * pointerDisturbance.vx +
+                    pointerDisturbance.vy * pointerDisturbance.vy
+                )
+              );
+              const sweepX = pointerDisturbance.vx / pointerSpeed;
+              const sweepY = pointerDisturbance.vy / pointerSpeed;
+
+              p.velX +=
+                dx * invDist * force +
+                sweepX * force * POINTER_DISTURB_SWEEP_BIAS;
+              p.velY +=
+                dy * invDist * force +
+                sweepY * force * POINTER_DISTURB_SWEEP_BIAS;
+            }
+          }
+
           // Spring back toward anchor + drift
           // Spring force: F = -k * disp
           p.velX += -SPRING_K * p.dispX;
@@ -539,6 +609,13 @@ export default function SignalField({
             p.rippleRadius = 0;
             p.rippleOpacity = 0;
           }
+        }
+      }
+
+      if (pointerDisturbance.strength > 0) {
+        pointerDisturbance.strength *= POINTER_DISTURB_DECAY;
+        if (pointerDisturbance.strength < POINTER_DISTURB_MIN_STRENGTH) {
+          pointerDisturbance.strength = 0;
         }
       }
 
@@ -646,9 +723,15 @@ export default function SignalField({
         } else {
           const opBase =
             p.opacity * (1 + Math.sin(p.breathPhase) * p.breathAmp * 0.5);
+          const disturbance = Math.min(
+            1,
+            Math.sqrt(p.dispX * p.dispX + p.dispY * p.dispY) / 18
+          );
+          const displayRadius = r * (1 + disturbance * 0.35);
+          const displayOpacity = Math.min(opBase + disturbance * 0.16, 0.68);
           ctx.beginPath();
-          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(165,157,145,${Math.min(opBase, 0.52) * eo})`;
+          ctx.arc(p.x, p.y, displayRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(165,157,145,${displayOpacity * eo})`;
           ctx.fill();
         }
       }
@@ -808,6 +891,11 @@ export default function SignalField({
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
 
       if (draggedRef.current) {
+        const pointerDisturbance = pointerDisturbanceRef.current;
+        pointerDisturbance.active = false;
+        pointerDisturbance.hasLast = false;
+        pointerDisturbance.strength = 0;
+
         if (activePointerIdRef.current !== e.pointerId) return;
         const fallbackSource = {
           startX: x,
@@ -827,6 +915,37 @@ export default function SignalField({
         );
         e.preventDefault();
         return;
+      }
+
+      const pointerDisturbance = pointerDisturbanceRef.current;
+      if (e.pointerType === "mouse") {
+        const vx = pointerDisturbance.hasLast
+          ? x - pointerDisturbance.lastX
+          : 0;
+        const vy = pointerDisturbance.hasLast
+          ? y - pointerDisturbance.lastY
+          : 0;
+        const speed = Math.min(
+          POINTER_DISTURB_MAX_SPEED,
+          Math.sqrt(vx * vx + vy * vy)
+        );
+
+        pointerDisturbance.active = true;
+        pointerDisturbance.hasLast = true;
+        pointerDisturbance.x = x;
+        pointerDisturbance.y = y;
+        pointerDisturbance.lastX = x;
+        pointerDisturbance.lastY = y;
+        pointerDisturbance.vx = vx;
+        pointerDisturbance.vy = vy;
+        pointerDisturbance.strength = Math.max(
+          pointerDisturbance.strength,
+          speed / POINTER_DISTURB_MAX_SPEED
+        );
+      } else {
+        pointerDisturbance.active = false;
+        pointerDisturbance.hasLast = false;
+        pointerDisturbance.strength = 0;
       }
 
       const found = findNamedAt(x, y);
@@ -925,6 +1044,8 @@ export default function SignalField({
         releasePointerCapture(canvas, e.pointerId);
       }
       hoveredRef.current = null;
+      pointerDisturbanceRef.current.active = false;
+      pointerDisturbanceRef.current.hasLast = false;
       hideTooltip();
       canvas.style.cursor = "default";
     },
@@ -958,6 +1079,9 @@ export default function SignalField({
       dragSourceRef.current = null;
       activePointerIdRef.current = null;
       hoveredRef.current = null;
+      pointerDisturbanceRef.current.active = false;
+      pointerDisturbanceRef.current.hasLast = false;
+      pointerDisturbanceRef.current.strength = 0;
       releasePointerCapture(canvas, e.pointerId);
       canvas.style.cursor = "default";
       hideTooltip();
