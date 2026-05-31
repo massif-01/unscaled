@@ -63,6 +63,7 @@ interface Particle {
   entranceT: number;
   entranceDelay: number;
   entranceDone: boolean;
+  returning: boolean;
   // Drift breathing
   drifting: boolean;
   driftPhaseX: number;
@@ -108,6 +109,14 @@ const REPEL_RADIUS_SQ = REPEL_RADIUS * REPEL_RADIUS;
 const REPEL_STRENGTH = 0.9; // force multiplier
 const SPRING_K = 0.055; // spring stiffness for return
 const DAMPING = 0.78; // velocity damping (0–1)
+const NAMED_RETURN_SPRING_K = 0.075;
+const NAMED_RETURN_DAMPING = 0.64;
+const NAMED_RETURN_SNAP_DISTANCE = 0.45;
+const NAMED_RETURN_SNAP_SPEED = 0.35;
+const NAMED_RETURN_SNAP_DISTANCE_SQ =
+  NAMED_RETURN_SNAP_DISTANCE * NAMED_RETURN_SNAP_DISTANCE;
+const NAMED_RETURN_SNAP_SPEED_SQ =
+  NAMED_RETURN_SNAP_SPEED * NAMED_RETURN_SNAP_SPEED;
 
 function rand(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -197,6 +206,7 @@ export default function SignalField({
   const hoveredRef = useRef<Particle | null>(null);
   const draggedRef = useRef<Particle | null>(null);
   const dragSourceRef = useRef<DragSource | null>(null);
+  const activePointerIdRef = useRef<number | null>(null);
   const sizeRef = useRef({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
@@ -224,7 +234,7 @@ export default function SignalField({
 
   const showTooltip = useCallback(
     (p: Particle) => {
-      updateTooltipPosition(p.tx, p.ty);
+      updateTooltipPosition(p.x, p.y);
       const label = p.node!.label;
       setTooltip(current =>
         current.visible && current.label === label
@@ -302,6 +312,7 @@ export default function SignalField({
           entranceT: 1,
           entranceDelay: 0,
           entranceDone: true,
+          returning: false,
           drifting: false,
           driftPhaseX: 0,
           driftPhaseY: 0,
@@ -341,6 +352,7 @@ export default function SignalField({
           entranceT: 0,
           entranceDelay: Math.floor(rand(0, 25)),
           entranceDone: false,
+          returning: false,
           drifting,
           driftPhaseX: rand(0, Math.PI * 2),
           driftPhaseY: rand(0, Math.PI * 2),
@@ -439,6 +451,10 @@ export default function SignalField({
             }
           }
         } else if (p === dragged) {
+          p.returning = false;
+          p.velX = 0;
+          p.velY = 0;
+
           if (dragSource) {
             p.x = dragSource.x + dragSource.offsetX;
             p.y = dragSource.y + dragSource.offsetY;
@@ -482,10 +498,35 @@ export default function SignalField({
             p.y = p.ty + p.dispY;
           }
         } else if (p.isNamed && p !== dragged) {
-          // Non-dragged named nodes: always stay at fixed position
-          // No drift, no spring, no displacement
-          p.x = p.tx;
-          p.y = p.ty;
+          if (p.returning) {
+            const dx = p.tx - p.x;
+            const dy = p.ty - p.y;
+            p.velX =
+              (p.velX + dx * NAMED_RETURN_SPRING_K) * NAMED_RETURN_DAMPING;
+            p.velY =
+              (p.velY + dy * NAMED_RETURN_SPRING_K) * NAMED_RETURN_DAMPING;
+            p.x += p.velX;
+            p.y += p.velY;
+
+            const distSq = dx * dx + dy * dy;
+            const speedSq = p.velX * p.velX + p.velY * p.velY;
+            if (
+              distSq < NAMED_RETURN_SNAP_DISTANCE_SQ &&
+              speedSq < NAMED_RETURN_SNAP_SPEED_SQ
+            ) {
+              p.x = p.tx;
+              p.y = p.ty;
+              p.velX = 0;
+              p.velY = 0;
+              p.returning = false;
+            }
+          } else {
+            // Non-dragged named nodes hold their anchor until a release spring starts.
+            p.x = p.tx;
+            p.y = p.ty;
+            p.velX = 0;
+            p.velY = 0;
+          }
         }
 
         p.breathPhase += p.breathSpeed;
@@ -598,8 +639,8 @@ export default function SignalField({
             ctx.textAlign = "center";
             ctx.fillText(
               p.node!.label.toUpperCase(),
-              p.tx,
-              p.ty - NAMED_LABEL_OFFSET
+              p.x,
+              p.y - NAMED_LABEL_OFFSET
             );
           }
         } else {
@@ -679,6 +720,51 @@ export default function SignalField({
     []
   );
 
+  const hasPointerCapture = useCallback(
+    (canvas: HTMLCanvasElement, pointerId: number) => {
+      try {
+        return canvas.hasPointerCapture(pointerId);
+      } catch {
+        return false;
+      }
+    },
+    []
+  );
+
+  const syncDraggedPositionFromPointer = useCallback(
+    (
+      p: Particle,
+      clientX: number,
+      clientY: number,
+      dragSource: DragSource | null
+    ) => {
+      if (!dragSource) return getCanvasPos(clientX, clientY);
+      const pointer = getCanvasPos(clientX, clientY);
+      p.x = pointer.x + dragSource.offsetX;
+      p.y = pointer.y + dragSource.offsetY;
+      return pointer;
+    },
+    [getCanvasPos]
+  );
+
+  const startNamedReturn = useCallback((p: Particle) => {
+    const dx = p.tx - p.x;
+    const dy = p.ty - p.y;
+    const distSq = dx * dx + dy * dy;
+
+    p.velX = 0;
+    p.velY = 0;
+
+    if (distSq < NAMED_RETURN_SNAP_DISTANCE_SQ) {
+      p.x = p.tx;
+      p.y = p.ty;
+      p.returning = false;
+      return;
+    }
+
+    p.returning = true;
+  }, []);
+
   // ── Pointer events ─────────────────────────────────────────────────────────
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -691,7 +777,11 @@ export default function SignalField({
       );
       if (found) {
         const canvas = e.currentTarget;
+        found.returning = false;
+        found.velX = 0;
+        found.velY = 0;
         draggedRef.current = found;
+        activePointerIdRef.current = e.pointerId;
         dragSourceRef.current = {
           x,
           y,
@@ -718,6 +808,7 @@ export default function SignalField({
       const { x, y } = getCanvasPos(e.clientX, e.clientY);
 
       if (draggedRef.current) {
+        if (activePointerIdRef.current !== e.pointerId) return;
         const fallbackSource = {
           startX: x,
           startY: y,
@@ -765,18 +856,32 @@ export default function SignalField({
       const dragSource = dragSourceRef.current;
 
       if (wasDragged) {
+        if (activePointerIdRef.current !== e.pointerId) return;
+        const releasePoint = syncDraggedPositionFromPointer(
+          wasDragged,
+          e.clientX,
+          e.clientY,
+          dragSource
+        );
         // Check if it was a click (minimal movement)
-        const dx = dragSource ? dragSource.x - dragSource.startX : 0;
-        const dy = dragSource ? dragSource.y - dragSource.startY : 0;
+        const dx = dragSource ? releasePoint.x - dragSource.startX : 0;
+        const dy = dragSource ? releasePoint.y - dragSource.startY : 0;
         const moved = Math.sqrt(dx * dx + dy * dy);
 
-        // Release the pointer force source. The named node never moved.
+        // Release the pointer force source and let dragged nodes return in the loop.
         draggedRef.current = null;
         dragSourceRef.current = null;
+        activePointerIdRef.current = null;
+        hoveredRef.current = null;
         releasePointerCapture(canvas, e.pointerId);
         canvas.style.cursor = "default";
 
         if (moved < (e.pointerType === "touch" ? 10 : 8)) {
+          wasDragged.x = wasDragged.tx;
+          wasDragged.y = wasDragged.ty;
+          wasDragged.velX = 0;
+          wasDragged.velY = 0;
+          wasDragged.returning = false;
           // Treat as click — navigate
           const url = wasDragged.node!.url;
           if (url.startsWith("/")) {
@@ -786,39 +891,83 @@ export default function SignalField({
             // External link — use window.location
             window.location.href = url;
           }
+        } else {
+          startNamedReturn(wasDragged);
         }
         hideTooltip();
       }
     },
-    [hideTooltip, releasePointerCapture]
+    [
+      hideTooltip,
+      releasePointerCapture,
+      setLocation,
+      startNamedReturn,
+      syncDraggedPositionFromPointer,
+    ]
   );
 
   const handlePointerLeave = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
       const canvas = e.currentTarget;
       if (draggedRef.current) {
+        if (activePointerIdRef.current !== e.pointerId) return;
+        if (hasPointerCapture(canvas, e.pointerId)) return;
+        syncDraggedPositionFromPointer(
+          draggedRef.current,
+          e.clientX,
+          e.clientY,
+          dragSourceRef.current
+        );
+        startNamedReturn(draggedRef.current);
         draggedRef.current = null;
         dragSourceRef.current = null;
+        activePointerIdRef.current = null;
         releasePointerCapture(canvas, e.pointerId);
       }
       hoveredRef.current = null;
       hideTooltip();
       canvas.style.cursor = "default";
     },
-    [hideTooltip, releasePointerCapture]
+    [
+      hasPointerCapture,
+      hideTooltip,
+      releasePointerCapture,
+      startNamedReturn,
+      syncDraggedPositionFromPointer,
+    ]
   );
 
   const handlePointerCancel = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (draggedRef.current && activePointerIdRef.current !== e.pointerId) {
+        return;
+      }
+      if (!draggedRef.current && !e.isPrimary) return;
+
       const canvas = e.currentTarget;
+      if (draggedRef.current) {
+        syncDraggedPositionFromPointer(
+          draggedRef.current,
+          e.clientX,
+          e.clientY,
+          dragSourceRef.current
+        );
+        startNamedReturn(draggedRef.current);
+      }
       draggedRef.current = null;
       dragSourceRef.current = null;
+      activePointerIdRef.current = null;
       hoveredRef.current = null;
       releasePointerCapture(canvas, e.pointerId);
       canvas.style.cursor = "default";
       hideTooltip();
     },
-    [hideTooltip, releasePointerCapture]
+    [
+      hideTooltip,
+      releasePointerCapture,
+      startNamedReturn,
+      syncDraggedPositionFromPointer,
+    ]
   );
 
   return (
