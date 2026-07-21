@@ -35,7 +35,11 @@ const srOnly: React.CSSProperties = {
 // Static fallback nodes — used while DB loads or if DB is empty
 const FALLBACK_NODES: NavNode[] = [
   { id: "github", label: "Github", url: "https://github.com/massif-01" },
-  { id: "podcast", label: "Podcast", url: "/podcast" },
+  {
+    id: "hugging-face",
+    label: "Hugging Face",
+    url: "https://huggingface.co/massif",
+  },
   { id: "ai", label: "AI", url: "/ai" },
   { id: "info", label: "Info", url: "/info" },
   {
@@ -165,7 +169,7 @@ export default function Home() {
     >
       {/* SEO: visually hidden H2 */}
       <h2 style={srOnly}>
-        Unscaled — Podcast, AI, GitHub &amp; essays beyond hardware metrics.
+        Unscaled — Hugging Face, AI, GitHub &amp; essays beyond hardware metrics.
       </h2>
 
       {/* ── Wordmark ─────────────────────────────────────────────────────── */}
