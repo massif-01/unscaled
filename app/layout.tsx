@@ -6,8 +6,12 @@ export const metadata: Metadata = {
   description:
     "Podcast, AI, GitHub projects, and essays beyond hardware metrics.",
   icons: {
-    icon: "/favicon.ico?v=3",
-    shortcut: "/favicon.ico?v=3",
+    icon: {
+      url: "/unscaled-logo-hd.png",
+      type: "image/png",
+      sizes: "1248x1248",
+    },
+    apple: "/unscaled-logo-hd.png",
   },
 };
 
