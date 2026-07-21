@@ -1,26 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1777515801271,
-      "tag": "0000_quick_dagger",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1777515864862,
-      "tag": "0001_military_kylun",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1778351085679,
-      "tag": "0002_worried_scream",
+      "version": "6",
+      "when": 1783620960456,
+      "tag": "0000_handy_orphan",
       "breakpoints": true
     }
   ]

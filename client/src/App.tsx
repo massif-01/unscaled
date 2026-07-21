@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import TrpcProvider from "./lib/TrpcProvider";
 import Home from "./pages/Home";
 
 const AdminRoute = lazy(() => import("./pages/AdminRoute"));
@@ -37,7 +38,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <Router />
+        <TrpcProvider>
+          <Router />
+        </TrpcProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
