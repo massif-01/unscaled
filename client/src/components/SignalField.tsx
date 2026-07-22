@@ -20,7 +20,6 @@ export interface NavNode {
   nx?: number;
   ny?: number;
 }
-
 type NamedAnchor = {
   nx: number;
   ny: number;
@@ -1101,6 +1100,7 @@ export default function SignalField({
     >
       <canvas
         ref={canvasRef}
+        aria-hidden="true"
         style={{
           display: "block",
           width: "100%",
@@ -1113,6 +1113,14 @@ export default function SignalField({
         onPointerLeave={handlePointerLeave}
         onPointerCancel={handlePointerCancel}
       />
+
+      <nav className="signal-field-semantic-nav" aria-label="Primary navigation">
+        {nodes.map(node => (
+          <a href={node.url} key={node.id}>
+            {node.label}
+          </a>
+        ))}
+      </nav>
 
       {/* Hover / drag tooltip */}
       <div
