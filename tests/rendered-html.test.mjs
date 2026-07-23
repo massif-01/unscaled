@@ -36,13 +36,14 @@ test("canvas navigation has an equivalent semantic link surface", async () => {
   assert.match(signalField, /<a href=\{node\.url\} key=\{node\.id\}>/);
 });
 
-test("AI display title owns its row instead of colliding with the summary", async () => {
+test("AI title and summary form one left-aligned reading block", async () => {
   const styles = await source("client/src/secondary-pages.css");
   const intro = styles.match(/\.ai-intro\s*\{([^}]*)\}/)?.[1] ?? "";
   const summary = styles.match(/\.ai-summary\s*\{([^}]*)\}/)?.[1] ?? "";
 
   assert.doesNotMatch(intro, /grid-template-columns/);
-  assert.match(summary, /margin:\s*clamp\([^;]+\)\s+0\s+0\s+auto/);
+  assert.match(summary, /margin:\s*clamp\([^;]+\)\s+0\s+0/);
+  assert.doesNotMatch(summary, /auto/);
 });
 
 test("Info remains a Chinese, equal-weight editorial list", async () => {
