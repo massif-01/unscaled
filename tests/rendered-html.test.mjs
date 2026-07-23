@@ -36,6 +36,15 @@ test("canvas navigation has an equivalent semantic link surface", async () => {
   assert.match(signalField, /<a href=\{node\.url\} key=\{node\.id\}>/);
 });
 
+test("AI display title owns its row instead of colliding with the summary", async () => {
+  const styles = await source("client/src/secondary-pages.css");
+  const intro = styles.match(/\.ai-intro\s*\{([^}]*)\}/)?.[1] ?? "";
+  const summary = styles.match(/\.ai-summary\s*\{([^}]*)\}/)?.[1] ?? "";
+
+  assert.doesNotMatch(intro, /grid-template-columns/);
+  assert.match(summary, /margin:\s*clamp\([^;]+\)\s+0\s+0\s+auto/);
+});
+
 test("Info remains a Chinese, equal-weight editorial list", async () => {
   const [infoPage, styles] = await Promise.all([
     source("client/src/pages/InfoPage.tsx"),
