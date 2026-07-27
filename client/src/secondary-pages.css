@@ -605,6 +605,10 @@
   right: 9%;
   bottom: 42%;
 }
+.static-signal-field a:nth-child(6) {
+  left: 42%;
+  bottom: 12%;
+}
 
 @media (max-width: 760px) {
   .secondary-header,

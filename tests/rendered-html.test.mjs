@@ -22,8 +22,18 @@ test("server fallback exposes the complete primary navigation before hydration",
   assert.match(legacyApp, /\["AI", "\/ai"\]/);
   assert.match(legacyApp, /\["Info", "\/info"\]/);
   assert.match(legacyApp, /https:\/\/github\.com\/massif-01\/AuraCap/);
+  assert.match(legacyApp, /\["CoPing", "https:\/\/github\.com\/massif-01\/CoPing"\]/);
   assert.match(layout, /Hugging Face, AI, GitHub projects/);
   assert.doesNotMatch(layout, /Podcast/);
+});
+
+test("homepage data fallbacks include the CoPing GitHub node", async () => {
+  const home = await source("client/src/pages/Home.tsx");
+
+  assert.match(home, /id:\s*"coping"/);
+  assert.match(home, /label:\s*"CoPing"/);
+  assert.match(home, /url:\s*"https:\/\/github\.com\/massif-01\/CoPing"/);
+  assert.match(home, /positionMode="session-random"/);
 });
 
 test("canvas navigation has an equivalent semantic link surface", async () => {

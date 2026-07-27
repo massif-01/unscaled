@@ -47,6 +47,11 @@ const FALLBACK_NODES: NavNode[] = [
     label: "AuraCAP",
     url: "https://github.com/massif-01/AuraCap",
   },
+  {
+    id: "coping",
+    label: "CoPing",
+    url: "https://github.com/massif-01/CoPing",
+  },
 ];
 
 function isPublicNavNode(value: unknown): value is PublicNavNode {
