@@ -8,7 +8,7 @@ const staticLinks = [
   ["AI", "/ai"],
   ["Info", "/info"],
   ["AuraCAP", "https://github.com/massif-01/AuraCap"],
-  ["CoPing", "https://github.com/massif-01/CoPing"],
+  ["arXiv", "https://arxiv.org/a/shi_y_8.html"],
 ] as const;
 
 function StaticHomeShell() {

@@ -22,17 +22,19 @@ test("server fallback exposes the complete primary navigation before hydration",
   assert.match(legacyApp, /\["AI", "\/ai"\]/);
   assert.match(legacyApp, /\["Info", "\/info"\]/);
   assert.match(legacyApp, /https:\/\/github\.com\/massif-01\/AuraCap/);
-  assert.match(legacyApp, /\["CoPing", "https:\/\/github\.com\/massif-01\/CoPing"\]/);
+  assert.match(legacyApp, /\["arXiv", "https:\/\/arxiv\.org\/a\/shi_y_8\.html"\]/);
+  assert.doesNotMatch(legacyApp, /CoPing/);
   assert.match(layout, /Hugging Face, AI, GitHub projects/);
   assert.doesNotMatch(layout, /Podcast/);
 });
 
-test("homepage data fallbacks include the CoPing GitHub node", async () => {
+test("homepage data fallbacks include the arXiv author node", async () => {
   const home = await source("client/src/pages/Home.tsx");
 
-  assert.match(home, /id:\s*"coping"/);
-  assert.match(home, /label:\s*"CoPing"/);
-  assert.match(home, /url:\s*"https:\/\/github\.com\/massif-01\/CoPing"/);
+  assert.match(home, /id:\s*"arxiv"/);
+  assert.match(home, /label:\s*"arXiv"/);
+  assert.match(home, /url:\s*"https:\/\/arxiv\.org\/a\/shi_y_8\.html"/);
+  assert.doesNotMatch(home, /CoPing/);
   assert.match(home, /positionMode="session-random"/);
 });
 

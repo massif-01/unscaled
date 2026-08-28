@@ -48,9 +48,9 @@ const FALLBACK_NODES: NavNode[] = [
     url: "https://github.com/massif-01/AuraCap",
   },
   {
-    id: "coping",
-    label: "CoPing",
-    url: "https://github.com/massif-01/CoPing",
+    id: "arxiv",
+    label: "arXiv",
+    url: "https://arxiv.org/a/shi_y_8.html",
   },
 ];
 
