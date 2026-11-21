@@ -1,0 +1,48 @@
+name: Deploy Unscaled to Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unscaled-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+      - run: npm ci --legacy-peer-deps
+      - run: npm run build
+      - name: Publish the Worker version
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          main_sha=$(git ls-remote --exit-code origin refs/heads/main | cut -f1)
+          if [[ "$GITHUB_SHA" != "$main_sha" ]]; then
+            echo "This commit is no longer the head of main. Skipping deployment."
+            exit 0
+          fi
+
+          : "${CLOUDFLARE_ACCOUNT_ID:?Set the Cloudflare account ID repository variable}"
+          : "${CLOUDFLARE_API_TOKEN:?Set the Cloudflare Worker deployment secret}"
+          upload_output=$(mktemp)
+          WRANGLER_OUTPUT_FILE_PATH="$upload_output" npm exec -- wrangler versions upload \
+            --keep-vars --tag "$GITHUB_SHA" --message "GitHub main $GITHUB_SHA"
+          version_id=$(jq -er 'select(.type == "version-upload") | .version_id' "$upload_output")
+          npm exec -- wrangler versions deploy "$version_id@100%" --yes \
+            --message "GitHub main $GITHUB_SHA"
