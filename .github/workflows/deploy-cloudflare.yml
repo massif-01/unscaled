@@ -40,9 +40,11 @@ jobs:
 
           : "${CLOUDFLARE_ACCOUNT_ID:?Set the Cloudflare account ID repository variable}"
           : "${CLOUDFLARE_API_TOKEN:?Set the Cloudflare Worker deployment secret}"
+          # Use a CLI that can resolve preview metadata with a Worker-scoped token.
+          wrangler=(npm exec --yes --package=wrangler@4.166.0 -- wrangler)
           upload_output=$(mktemp)
-          WRANGLER_OUTPUT_FILE_PATH="$upload_output" npm exec -- wrangler versions upload \
+          WRANGLER_OUTPUT_FILE_PATH="$upload_output" "${wrangler[@]}" versions upload \
             --keep-vars --tag "$GITHUB_SHA" --message "GitHub main $GITHUB_SHA"
           version_id=$(jq -er 'select(.type == "version-upload") | .version_id' "$upload_output")
-          npm exec -- wrangler versions deploy "$version_id@100%" --yes \
+          "${wrangler[@]}" versions deploy "$version_id@100%" --yes \
             --message "GitHub main $GITHUB_SHA"
