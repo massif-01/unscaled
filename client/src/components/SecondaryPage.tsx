@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useEffect } from "react";
 import { Link } from "wouter";
 
 export function SecondaryHeader({ section }: { section: string }) {
@@ -31,6 +32,10 @@ export function ArticlePage({
   repository,
   children,
 }: ArticlePageProps) {
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <main className="secondary-page article-page">
       <SecondaryHeader section="Projects / Article" />

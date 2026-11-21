@@ -10,6 +10,10 @@ const AiPage = lazy(() => import("./pages/AiPage"));
 const DailyStockAnalysisArticle = lazy(() => import("./pages/DailyStockAnalysisArticle"));
 const AuraCapArticle = lazy(() => import("./pages/AuraCapArticle"));
 const ChatRawArticle = lazy(() => import("./pages/ChatRawArticle"));
+const ThorustinferArticle = lazy(() => import("./pages/ThorustinferArticle"));
+const QwenCoreAIArticle = lazy(() => import("./pages/QwenCoreAIArticle"));
+const TianshanOSArticle = lazy(() => import("./pages/TianshanOSArticle"));
+const AuraCapGleaningsArticle = lazy(() => import("./pages/AuraCapGleaningsArticle"));
 const PodcastPage = lazy(() => import("./pages/PodcastPage"));
 const InfoPage = lazy(() => import("./pages/InfoPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -24,6 +28,10 @@ function Router() {
         <Route path={"/ai/daily-stock-analysis"} component={DailyStockAnalysisArticle} />
         <Route path={"/ai/auracap"} component={AuraCapArticle} />
         <Route path={"/ai/chatraw"} component={ChatRawArticle} />
+        <Route path={"/ai/thorustinfer"} component={ThorustinferArticle} />
+        <Route path={"/ai/qwen3-1.7b-coreai-ios"} component={QwenCoreAIArticle} />
+        <Route path={"/ai/tianshanos"} component={TianshanOSArticle} />
+        <Route path={"/ai/dsh-auracap"} component={AuraCapGleaningsArticle} />
         <Route path={"/ai"} component={AiPage} />
         <Route path={"/podcast"} component={PodcastPage} />
         <Route path={"/info"} component={InfoPage} />
