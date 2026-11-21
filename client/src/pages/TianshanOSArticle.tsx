@@ -15,27 +15,42 @@ export default function TianshanOSArticle() {
     >
       <p>
         A long inference run goes quiet. The machine stops answering over SSH,
-        and you are far from the power button. The first question is whether
-        the machine is still on. TianshanOS gives the RM-01 a separate way to
-        answer even when one of its hosts has stopped responding.
+        and you are nowhere near the power button. The first question is whether
+        the box is still alive. TianshanOS gives the RM-01 an independent
+        voice—running on a dedicated <strong>ESP32-S3</strong> out-of-band
+        controller (built on ESP-IDF v5.5.2) that stays reachable even when the
+        inference or application host has locked up.
       </p>
-
-      <h2>A view from outside the host</h2>
+      <h2>Hardware telemetry from outside the host</h2>
       <p>
-        While the management controller has power and its network connection,
-        you can open the browser console to check the inference and application
-        hosts, read temperatures, and see how the fans are running. If a host
-        needs a reset, you can reach the hardware controls from the same place.
-        Those readings also help on an ordinary day, when the machine is up and
-        you want to know how it is handling a long job.
+        As long as the controller has power and a management link, you can open
+        the browser console or API to inspect the machine from the outside.
       </p>
-
-      <h2>Working on the console</h2>
+      <ul>
+        <li>
+          <strong>Live power &amp; system console:</strong> Check input voltage,
+          current, wattage, controller memory, and host power states across
+          dedicated system, network, terminal, file, and command tabs.
+        </li>
+        <li>
+          <strong>Out-of-band recovery:</strong> Issue hardware power and reset
+          signals directly when a host stops responding.
+        </li>
+        <li>
+          <strong>Config-driven &amp; maintainable:</strong> Hardware pins and
+          peripherals map through <code>devices.json</code> and{" "}
+          <code>pins.json</code>, with SD card config backups and OTA or USB
+          firmware updates.
+        </li>
+      </ul>
+      <h2>Thermal curves &amp; rule-based automation</h2>
       <p>
-        TianshanOS is a project from RMinte. I contributed to its browser
-        console and cooling controls. The repository is a good place to see
-        what the controller can show you, from a host’s power state to the
-        temperature you want to keep an eye on.
+        Beyond ordinary fan curves, cooling adapts to{" "}
+        <strong>temperature rise trends</strong> and falls back safely if a
+        sensor drops out. You can also wire lightweight automation rules—reading
+        REST or WebSocket metrics, setting thresholds with cooldowns, and
+        triggering LED matrix alerts, logs, or SSH commands—so the controller
+        watches long jobs for you.
       </p>
     </ArticlePage>
   );

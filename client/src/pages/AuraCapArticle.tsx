@@ -15,28 +15,63 @@ export default function AuraCapArticle() {
       repository="https://github.com/massif-01/AuraCap"
     >
       <p>
-        You screenshot a passage on the train. A few days later, you remember
-        the idea but can’t say what you were reading. I built AuraCap around
-        the habit of taking the screenshot while the idea is fresh. The
-        sorting can wait.
+        You screenshot a passage on the train. Days later, you remember the
+        idea, not what you were reading. AuraCap is built around the habit of
+        capturing while a thought is fresh—and letting an automated pipeline
+        handle the filing after you put your phone away.
       </p>
-
-      <h2>A short stop on the way to a record</h2>
+      <h2>Release as the relay: zero-server capture</h2>
       <p>
-        An iPhone Shortcut sends the capture to a GitHub inbox. A workflow
-        asks the model you configure to read the image or recording and
-        writes the result to files in your repository. Once a capture has
-        been processed, the uploaded copy is cleared from the inbox. What
-        stays is a record you can open and read.
+        Instead of asking you to maintain an S3 bucket, an image host, or a
+        webhook proxy, AuraCap treats{" "}
+        <strong>GitHub Release Assets as transient middleware</strong>:
       </p>
-
-      <h2>Something to come back to</h2>
       <p>
-        The timeline puts each capture back in its day. Daily notes and weekly
-        summaries give you another way in when you remember a topic but have
-        lost track of the date. The repository walks through both the GitHub
-        setup and a self-hosted option. There’s also a Mac plugin that grew
-        out of this work,{" "}
+        <code>
+          iPhone Shortcut → GitHub Release inbox → GitHub Actions + AI → asset
+          cleanup → Markdown/JSON archive
+        </code>
+      </p>
+      <p>
+        Once the workflow reads your screenshot or voice recording using your
+        configured model (OpenAI, Gemini, Anthropic, SiliconFlow, Groq, or
+        Mistral), it deletes the temporary upload and commits a clean record—so
+        you can fork the repo and run it at zero server cost, or self-host via
+        Docker.
+      </p>
+      <h2>Four layers of memory in your own repo</h2>
+      <p>Every capture settles into an open file hierarchy you own outright:</p>
+      <ul>
+        <li>
+          <strong>
+            <code>timeline</code>:
+          </strong>{" "}
+          Atomic, chronological event records for each capture.
+        </li>
+        <li>
+          <strong>
+            <code>insights</code>:
+          </strong>{" "}
+          Short-cycle daily signals distilled from that day's notes.
+        </li>
+        <li>
+          <strong>
+            <code>summary</code>:
+          </strong>{" "}
+          Longitudinal threads across days and weeks when you remember a topic
+          but lost the date.
+        </li>
+        <li>
+          <strong>
+            <code>task_index</code>:
+          </strong>{" "}
+          A semantic index layer built for future RAG and knowledge-graph
+          queries.
+        </li>
+      </ul>
+      <p>
+        If you prefer keeping everything on a Mac inside DeepSeek Harness with
+        multi-screen grouping, see its companion plugin,{" "}
         <Link className="underline underline-offset-4" href="/ai/dsh-auracap">
           AuraCap · Gleanings
         </Link>

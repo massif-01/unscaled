@@ -346,6 +346,16 @@
   margin: 0 0 1.8rem;
 }
 
+.article-copy ul {
+  margin: 0 0 1.8rem;
+  padding-inline-start: 1.25em;
+  list-style: disc;
+}
+
+.article-copy li + li {
+  margin-top: 0.65em;
+}
+
 .article-copy h2 {
   margin: 68px 0 18px;
   color: var(--foreground);

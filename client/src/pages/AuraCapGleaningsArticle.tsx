@@ -15,33 +15,47 @@ export default function AuraCapGleaningsArticle() {
       repository="https://github.com/massif-01/dsh-auracap"
     >
       <p>
-        You saved three screens of an article for one sentence. Weeks later,
-        you remember what the sentence meant and have no idea where it is.
-        Gleanings gives those screens a place in a timeline, keeps them
-        together, and lets you find them by subject as well as by date.
+        You saved three screens of an article for a single sentence. Weeks
+        later, you remember what that sentence meant, and have no idea where it
+        lives. Gleanings gives those fragments a place in a timeline, keeps
+        related captures together, and lets you retrieve them by subject as
+        easily as by date.
       </p>
-
-      <h2>Come back to a thought in the middle of your work</h2>
+      <h2>Local-first capture &amp; multi-screen grouping</h2>
       <p>
-        Gleanings lives inside DeepSeek Harness on your Mac. You can add a
-        screenshot or document from the Mac, or send a capture from an iPhone.
-        Open a weekly reflection and you can follow a thought back to the
-        captures behind it. With your permission, the agent can look up a
-        relevant memory from a new conversation, too.
+        Gleanings runs inside DeepSeek Harness on your Mac (
+        <code>~/.dsh/auracap/</code>), keeping your collection local while using
+        DeepSeek only when a capture needs to be read or summarized.
       </p>
-
-      <h2>From an archive to a place to look back</h2>
+      <ul>
+        <li>
+          <strong>Multi-format inbox:</strong> Drag in images, PDFs, TXT, or
+          Markdown files, clip directly from macOS screenshots, or send captures
+          from an iPhone Shortcut (using GitHub purely as a free relay).
+        </li>
+        <li>
+          <strong>Automatic screen grouping:</strong> Sequential screenshots
+          from the same article are grouped into one card, ready to merge into a
+          single summary, split apart, or re-group later.
+        </li>
+        <li>
+          <strong>Four horizons of reflection:</strong> Captures roll up into
+          daily insights and weekly, monthly, and yearly traces—each linked back
+          to the original source captures.
+        </li>
+      </ul>
+      <h2>Private by default, open to the agent when asked</h2>
       <p>
-        The{" "}
+        The original{" "}
         <Link className="underline underline-offset-4" href="/ai/auracap">
-          original AuraCap
+          AuraCap
         </Link>{" "}
-        sent captures from an iPhone to a Markdown archive on GitHub.
-        Gleanings grew out of that workflow and puts the archive and the
-        conversation beside each other.
-        It keeps your collection on the Mac and uses DeepSeek when a capture
-        needs to be read or summarized. The repository shows the timeline,
-        grouped captures, and reflections in use.
+        pushed iPhone captures into a GitHub Markdown archive. Gleanings grew
+        out of that workflow to put the archive and the conversation side by
+        side. Its local HTTP surface listens strictly on <code>127.0.0.1</code>,
+        and agent memory access is <strong>read-only and off by default</strong>
+        —so a new conversation only looks up past captures when you explicitly
+        turn it on.
       </p>
     </ArticlePage>
   );

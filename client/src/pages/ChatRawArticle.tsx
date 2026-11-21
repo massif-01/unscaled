@@ -14,30 +14,43 @@ export default function ChatRawArticle() {
       repository="https://github.com/massif-01/ChatRaw"
     >
       <p>
-        When I try a model, I want to get to the first question. I might ask
-        it to read a page of notes, then send the same question to another
-        model to see what each one picks up. ChatRaw gives those conversations
-        one familiar window. You decide which service answers, whether it is
-        a model on your own machine or an API you already use.
+        When trying a new model, you want to get straight to the first
+        question—ask it to read a page of notes, then send the exact same prompt
+        to another model to see what each one notices. ChatRaw puts those
+        conversations in one quiet, zero-signup window, whether the model sits
+        on your own machine (Ollama, vLLM, LocalAI, LM Studio) or behind an API
+        key.
       </p>
-
-      <h2>A window of its own</h2>
+      <h2>From web self-hosting to an Apple Silicon app</h2>
       <p>
-        ChatRaw started as a web interface you could run yourself. There is
-        now a desktop app for Apple silicon Macs. It opens in its own window
-        and starts the local service for you. ChatRaw stores the history on
-        the machine running the app. Your chosen model endpoint receives your
-        prompts and the context you send with them.
+        ChatRaw started as a lightweight web interface—deployable in{" "}
+        <strong>30 seconds</strong>, running in roughly <strong>60 MB</strong>{" "}
+        of memory, and scoring <strong>100/100/100/100</strong> on
+        Lighthouse—and now includes a native macOS app (SwiftUI + WKWebView) for
+        Apple Silicon that launches its <code>127.0.0.1</code> backend
+        automatically and keeps your history on disk.
       </p>
-
+      <ul>
+        <li>
+          <strong>Documents &amp; Vision:</strong> Built-in parsing for PDF,
+          DOCX, TXT, and Markdown alongside image understanding.
+        </li>
+        <li>
+          <strong>Reasoning models:</strong> Native support for thinking-mode
+          traces across DeepSeek-R1, Qwen, and o1-style endpoints.
+        </li>
+        <li>
+          <strong>Plugin &amp; adapter marketplace:</strong> Extensible with
+          RAG, web parsing, and adapters for Hermes, Codex CLI, Claude Code, Pi,
+          and DeepSeek Harness.
+        </li>
+      </ul>
       <h2>When a conversation turns into a task</h2>
       <p>
-        A question can grow into something you want an agent to work on.
-        The Linux setup can connect tools such as Hermes or Codex CLI so you
-        can follow a task, answer a question, or review an approval from the
-        same interface. The repository shows how to start with a chat on your
-        Mac or a self-hosted instance and where to go when you want to try an
-        agent.
+        A quick question often grows into work you want an agent to carry out.
+        Connecting tools like Hermes or Codex CLI lets you follow task progress,
+        answer prompts, or approve actions from the same interface—with setup
+        guides for both Mac and self-hosted Linux in the repository.
       </p>
     </ArticlePage>
   );
