@@ -40,7 +40,7 @@ const FALLBACK_NODES: NavNode[] = [
     label: "Hugging Face",
     url: "https://huggingface.co/massif",
   },
-  { id: "ai", label: "AI", url: "/ai" },
+  { id: "ai", label: "Projects", url: "/ai" },
   { id: "info", label: "Info", url: "/info" },
   {
     id: "arxiv",
@@ -71,7 +71,7 @@ function parsePosition(value: string | null | undefined) {
 function toNavNode(node: PublicNavNode): NavNode {
   return {
     id: String(node.id),
-    label: node.label,
+    label: node.url === "/ai" ? "Projects" : node.label,
     url: node.url,
     nx: parsePosition(node.posX),
     ny: parsePosition(node.posY),
@@ -171,7 +171,8 @@ export default function Home() {
     >
       {/* SEO: visually hidden H2 */}
       <h2 style={srOnly}>
-        Unscaled — Hugging Face, AI, GitHub &amp; essays beyond hardware metrics.
+        Unscaled — Selected projects, Hugging Face, GitHub &amp; essays beyond
+        hardware metrics.
       </h2>
 
       {/* ── Wordmark ─────────────────────────────────────────────────────── */}

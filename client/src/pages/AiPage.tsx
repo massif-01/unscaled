@@ -31,19 +31,18 @@ const projects = [
 
 export default function AiPage() {
   useEffect(() => {
-    document.title = "AI — Unscaled";
+    document.title = "Projects — Unscaled";
   }, []);
 
   return (
     <main className="secondary-page">
-      <SecondaryHeader section="AI / Experiments" />
+      <SecondaryHeader section="Projects" />
 
       <div className="secondary-wrap">
         <div className="ai-intro">
-          <h1 className="secondary-title">Experiments</h1>
+          <h1 className="secondary-title">Projects</h1>
           <p className="ai-summary">
-            Open-source systems for personal knowledge, local AI interfaces, and
-            practical decision support.
+            A few projects I’ve built and am proud to share.
           </p>
         </div>
 

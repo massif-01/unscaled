@@ -19,12 +19,12 @@ test("server fallback exposes the complete primary navigation before hydration",
   assert.match(legacyApp, /aria-label="Primary navigation"/);
   assert.match(legacyApp, /https:\/\/github\.com\/massif-01/);
   assert.match(legacyApp, /https:\/\/huggingface\.co\/massif/);
-  assert.match(legacyApp, /\["AI", "\/ai"\]/);
+  assert.match(legacyApp, /\["Projects", "\/ai"\]/);
   assert.match(legacyApp, /\["Info", "\/info"\]/);
   assert.doesNotMatch(legacyApp, /AuraCap/i);
   assert.match(legacyApp, /\["arXiv", "https:\/\/arxiv\.org\/a\/shi_y_8\.html"\]/);
   assert.doesNotMatch(legacyApp, /CoPing/);
-  assert.match(layout, /Hugging Face, AI, GitHub projects/);
+  assert.match(layout, /Selected projects, Hugging Face, GitHub/);
   assert.doesNotMatch(layout, /Podcast/);
 });
 

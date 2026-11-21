@@ -4,7 +4,7 @@ import "../client/src/index.css";
 export const metadata: Metadata = {
   title: "Unscaled — Beyond the Scale, Observer's Freedom",
   description:
-    "Hugging Face, AI, GitHub projects, and essays beyond hardware metrics.",
+    "Selected projects, Hugging Face, GitHub, and essays beyond hardware metrics.",
   icons: {
     icon: {
       url: "/unscaled-logo-hd.png",

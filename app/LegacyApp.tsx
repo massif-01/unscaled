@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 const staticLinks = [
   ["GitHub", "https://github.com/massif-01"],
   ["Hugging Face", "https://huggingface.co/massif"],
-  ["AI", "/ai"],
+  ["Projects", "/ai"],
   ["Info", "/info"],
   ["arXiv", "https://arxiv.org/a/shi_y_8.html"],
 ] as const;

@@ -33,7 +33,7 @@ export function ArticlePage({
 }: ArticlePageProps) {
   return (
     <main className="secondary-page article-page">
-      <SecondaryHeader section="AI / Article" />
+      <SecondaryHeader section="Projects / Article" />
 
       <article className="secondary-wrap article-wrap">
         <header className="article-hero">
