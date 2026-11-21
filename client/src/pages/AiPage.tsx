@@ -4,44 +4,12 @@ import { SecondaryHeader } from "@/components/SecondaryPage";
 
 const projects = [
   {
-    title: "AuraCap",
+    title: "AuraCap · Gleanings",
     description:
-      "Send iPhone screenshots and recordings to a readable timeline you can keep in your own repository.",
-    href: "/ai/auracap",
-    category: "Knowledge",
-    meta: "iOS / GitHub Actions / Markdown",
-  },
-  {
-    title: "ChatRaw",
-    description:
-      "One place to talk to the models you choose, from a first question on your Mac to an agent task on a Linux host.",
-    href: "/ai/chatraw",
-    category: "Interface",
-    meta: "macOS / Docker / Agents",
-  },
-  {
-    title: "Daily Stock Analysis",
-    description:
-      "Keep up with a watchlist across markets, then revisit the reports when you want to see what changed.",
-    href: "/ai/daily-stock-analysis",
-    category: "Markets",
-    meta: "Watchlists / Reports / Research",
-  },
-  {
-    title: "Thorustinfer",
-    description:
-      "Turn a Jetson Thor into a local model server that your chat and coding tools can use.",
-    href: "/ai/thorustinfer",
-    category: "Local AI",
-    meta: "Jetson Thor / Model serving",
-  },
-  {
-    title: "Qwen3-1.7B on iPhone",
-    description:
-      "An account of getting a small language model to read and respond on the phone that holds the data.",
-    href: "/ai/qwen3-1.7b-coreai-ios",
-    category: "On-device AI",
-    meta: "iPhone / Apple Core AI",
+      "Find the screenshot or passage you saved weeks ago without leaving the conversation you are working in.",
+    href: "/ai/dsh-auracap",
+    category: "Memory",
+    meta: "macOS / DeepSeek Harness",
   },
   {
     title: "TianshanOS",
@@ -52,12 +20,44 @@ const projects = [
     meta: "RM-01 / Remote management",
   },
   {
-    title: "AuraCap · Gleanings",
+    title: "Qwen3-1.7B on iPhone",
     description:
-      "Find the screenshot or passage you saved weeks ago without leaving the conversation you are working in.",
-    href: "/ai/dsh-auracap",
-    category: "Memory",
-    meta: "macOS / DeepSeek Harness",
+      "An account of getting a small language model to read and respond on the phone that holds the data.",
+    href: "/ai/qwen3-1.7b-coreai-ios",
+    category: "On-device AI",
+    meta: "iPhone / Apple Core AI",
+  },
+  {
+    title: "Thorustinfer",
+    description:
+      "Turn a Jetson Thor into a local model server that your chat and coding tools can use.",
+    href: "/ai/thorustinfer",
+    category: "Local AI",
+    meta: "Jetson Thor / Model serving",
+  },
+  {
+    title: "Daily Stock Analysis",
+    description:
+      "Keep up with a watchlist across markets, then revisit the reports when you want to see what changed.",
+    href: "/ai/daily-stock-analysis",
+    category: "Markets",
+    meta: "Watchlists / Reports / Research",
+  },
+  {
+    title: "ChatRaw",
+    description:
+      "One place to talk to the models you choose, from a first question on your Mac to an agent task on a Linux host.",
+    href: "/ai/chatraw",
+    category: "Interface",
+    meta: "macOS / Docker / Agents",
+  },
+  {
+    title: "AuraCap",
+    description:
+      "Send iPhone screenshots and recordings to a readable timeline you can keep in your own repository.",
+    href: "/ai/auracap",
+    category: "Knowledge",
+    meta: "iOS / GitHub Actions / Markdown",
   },
 ] as const;
 
