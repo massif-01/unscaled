@@ -43,11 +43,6 @@ const FALLBACK_NODES: NavNode[] = [
   { id: "ai", label: "AI", url: "/ai" },
   { id: "info", label: "Info", url: "/info" },
   {
-    id: "auracap",
-    label: "AuraCAP",
-    url: "https://github.com/massif-01/AuraCap",
-  },
-  {
     id: "arxiv",
     label: "arXiv",
     url: "https://arxiv.org/a/shi_y_8.html",
@@ -125,9 +120,12 @@ export default function Home() {
         if (!Array.isArray(payload)) return;
         if (!payload.every(isPublicNavNode)) return;
 
-        const nodes = payload.map(toNavNode);
-        if (!controller.signal.aborted && nodes.length > 0) {
-          setDbNodes(nodes);
+        if (!controller.signal.aborted && payload.length > 0) {
+          setDbNodes(
+            payload
+              .filter(node => node.label.trim().toLowerCase() !== "auracap")
+              .map(toNavNode)
+          );
         }
       } catch {
         // Keep the static fallback on network or parsing failures.
@@ -139,8 +137,7 @@ export default function Home() {
     return () => controller.abort();
   }, []);
 
-  const navNodes: NavNode[] =
-    dbNodes && dbNodes.length > 0 ? dbNodes : FALLBACK_NODES;
+  const navNodes = dbNodes ?? FALLBACK_NODES;
 
   // Both mobile and desktop use side-by-side layout.
   // Mobile: wordmark 42vw | desktop: wordmark 46%

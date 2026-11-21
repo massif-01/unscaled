@@ -21,19 +21,20 @@ test("server fallback exposes the complete primary navigation before hydration",
   assert.match(legacyApp, /https:\/\/huggingface\.co\/massif/);
   assert.match(legacyApp, /\["AI", "\/ai"\]/);
   assert.match(legacyApp, /\["Info", "\/info"\]/);
-  assert.match(legacyApp, /https:\/\/github\.com\/massif-01\/AuraCap/);
+  assert.doesNotMatch(legacyApp, /AuraCap/i);
   assert.match(legacyApp, /\["arXiv", "https:\/\/arxiv\.org\/a\/shi_y_8\.html"\]/);
   assert.doesNotMatch(legacyApp, /CoPing/);
   assert.match(layout, /Hugging Face, AI, GitHub projects/);
   assert.doesNotMatch(layout, /Podcast/);
 });
 
-test("homepage data fallbacks include the arXiv author node", async () => {
+test("homepage default nodes include arXiv and omit AuraCap", async () => {
   const home = await source("client/src/pages/Home.tsx");
 
   assert.match(home, /id:\s*"arxiv"/);
   assert.match(home, /label:\s*"arXiv"/);
   assert.match(home, /url:\s*"https:\/\/arxiv\.org\/a\/shi_y_8\.html"/);
+  assert.doesNotMatch(home, /label:\s*"AuraCap"/i);
   assert.doesNotMatch(home, /CoPing/);
   assert.match(home, /positionMode="session-random"/);
 });

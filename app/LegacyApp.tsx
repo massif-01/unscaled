@@ -7,7 +7,6 @@ const staticLinks = [
   ["Hugging Face", "https://huggingface.co/massif"],
   ["AI", "/ai"],
   ["Info", "/info"],
-  ["AuraCAP", "https://github.com/massif-01/AuraCap"],
   ["arXiv", "https://arxiv.org/a/shi_y_8.html"],
 ] as const;
 
